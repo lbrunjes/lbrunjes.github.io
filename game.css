@@ -1,0 +1,41 @@
+*{
+margin:0;
+padding:0;
+display:block;
+
+}
+
+
+
+body{
+
+	font: 16pt monospace;
+	text-align:center;
+}
+#container{
+
+	margin:0 auto;
+}
+
+head, script,.hide{
+	display:none!important;
+}
+header,footer{
+	text-align:center;
+	clear:both;
+}
+
+
+canvas,video, #container *{
+	background:transparent;
+	position:absolute;
+
+		 
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+}
+#container * *{
+	position: relative;;
+}
