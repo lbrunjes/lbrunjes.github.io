@@ -1,4 +1,4 @@
-// built at Thu 14 Aug 2014 07:08:03 PM EDT
+// built at Sun 17 Aug 2014 09:25:50 PM EDT
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -340,7 +340,7 @@ game.objects.level = function(players){
 	this.generateTerrain = function(){
 		var	keys= [];
 		while(keys.length <= 3 || Math.random() < .8){
-			keys.push(Math.random() * game.height);
+			keys.push(Math.random() * game.height/2 + game.height/4);
 		}
 		console.log("keys",keys);
 		var segment = (game.width/this.terrainScale)/(keys.length -1);
@@ -850,8 +850,16 @@ game.events.miss = function(evt){
 //used to allow swiping
 
 game.events.mousemove=function(e){
-	
+	if( game.screens[game.activeScreen].mousemove){
+		game.screens[game.activeScreen].mousemove(e);
+	}
 };
+game.events.mousedown=function(e){
+	if( game.screens[game.activeScreen].mousedown){
+		game.screens[game.activeScreen].mousedown(e);
+	}
+};
+
 
 
 ///
@@ -1230,6 +1238,11 @@ game.screens.client = function(){
 	this.playerId = 0;
 	this.pct = .2;
 	this.isMyTurn =true;
+	this.fontSize	=game.height/10;
+	this.reset =function(){
+		this.fontSize	=game.height/10;
+
+	}
 	
 	this.clickZones = [
 		{ //fire b utton
@@ -1240,12 +1253,13 @@ game.screens.client = function(){
 			click : function(evt){
 				
 				//send update
-				var msg = new game.messages.gameUpdate();
-				msg.message = {"fire":game.localPlayer.tank};
-				game.ws.send(JSON.stringify(msg));
+				if(!evt || !evt.dragged){
+					var msg = new game.messages.gameUpdate();
+					msg.message = {"fire":game.localPlayer.tank};
+					game.ws.send(JSON.stringify(msg));
 
-				//todo draw line for this one
-
+					//todo draw line for this one
+				}	
 
 			}
 		},
@@ -1253,7 +1267,7 @@ game.screens.client = function(){
 			x:game.width/6, 
 			y:game.height/4*3,
 			w: game.width/3*2,
-			h: 32,
+			h: 48,
 			click : function(){
 				
 				game.screens.client.pct = (diesel.mouseX - game.screens.client.clickZones[1].x)/(game.screens.client.clickZones[1].w);
@@ -1350,7 +1364,7 @@ game.screens.client = function(){
 		context.fillStyle ="#fff";
 		context.textAlign="center";
 		context.fillText("You're DEAD!",game.width/2, game.height/2);
-		context.fillText("Try not to smack talk too much while they finish duking it out",game.width/2, game.height/2 + game.fontSize);
+		context.fillText("Try not to smack talk too much while they finish duking it out",game.width/2, game.height/2 + this.fontSize);
 		context.textAlign="left";
 	};
 
@@ -1366,8 +1380,8 @@ game.screens.client = function(){
 
 
 	this.drawGui =function(context){
-		
-		
+		var tmp = context.font;
+		context.font = this.fontSize+ " "+ game.font;
 		
 		//show the fire buttons
 		if(this.isMyTurn){
@@ -1400,8 +1414,8 @@ game.screens.client = function(){
 			this.clickZones[1].w,this.clickZones[1].h);
 
 		game.context.main.textAlign = "center";
-		game.context.main.fillText("POWER",this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y -game.fontSize )
-		game.context.main.fillText(game.localPlayer.tank.power,this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y + this.clickZones[1].h + game.fontSize )
+		game.context.main.fillText("POWER",this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y - this.fontSize/2 )
+		game.context.main.fillText(game.localPlayer.tank.power,this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y + this.clickZones[1].h + this.fontSize/2 )
 		
 
 
@@ -1425,10 +1439,12 @@ game.screens.client = function(){
 		context.textAlign = "left";
 		
 
-	//	context.fillText("Current Turn:" +game.level.tanks[game.level.activePlayer].player, game.fontSize, game.fontSize);
-		context.fillText("aim:"+Math.round(diesel.degrees(game.localPlayer.tank.aim)), game.fontSize, game.fontSize*2);
-		context.fillText("power:"+ game.localPlayer.tank.power, game.fontSize, game.fontSize*3);
-		context.fillText("Mans:"+game.localPlayer.tank.health, game.fontSize, game.fontSize*4);
+	//	context.fillText("Current Turn:" +game.level.tanks[game.level.activePlayer].player, this.fontSize, this.fontSize);
+		context.fillText("aim:"+Math.round(diesel.degrees(game.localPlayer.tank.aim)), this.fontSize, this.fontSize*2);
+		context.fillText("power:"+ Math.round(game.localPlayer.tank.power), this.fontSize, this.fontSize*3);
+		context.fillText("health:"+Math.ceil(game.localPlayer.tank.health), this.fontSize, this.fontSize*4);
+
+		context.font = tmp;
 
 	};
 
@@ -1458,7 +1474,7 @@ game.screens.client = function(){
 		if(msg.joined){
 			if(game.level && game.level.effects){
 				var effect = new game.effects.text(msg.joined.name+" joined",
-					 game.fontSize, game.fontSize);
+					 this.fontSize, this.fontSize);
 				game.level.effects.add(effect);
 			}
 		}
@@ -1521,8 +1537,16 @@ game.screens.client = function(){
 
 
 
-	}
+	};
+	this.mousemove =function(evt){
+		
+		if(evt.button >0){
+			evt.dragged = true;
+			this.click(evt)
 
+
+		}
+	};
 
 
 };
