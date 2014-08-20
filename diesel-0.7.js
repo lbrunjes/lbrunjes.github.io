@@ -1,4 +1,4 @@
-// Diesel built at Tue 12 Aug 2014 03:32:38 PM EDT
+// Diesel built at Wed 20 Aug 2014 12:52:56 PM EDT
 /*
 	diesel.js
 	A simple event based js game engine 
@@ -334,12 +334,11 @@ diesel.events.bindEvents = function(eventObject){
 
 //set the engine x vars
 diesel.events.mousemove= function(evt){
-	var rect = diesel.container.getBoundingClientRect();
+	
+	var coords = diesel.util.getLocalCoords(evt.pageX, evt.pageY);
 
-	//TODO Scrolling can still cause issues.
-	diesel.mouseX = evt.pageX - rect.left - diesel.container.scrollLeft + window.pageXOffset;
-
-	diesel.mouseY = evt.pageY - rect.top - diesel.container.scrollTop +window.pageYOffset;
+	diesel.mouseX = coords.x
+	diesel.mouseY = coords.y;
 	
 };
 
@@ -599,14 +598,17 @@ diesel.proto.screen = function(){
 	*/
 	
 	//called when the object is clicked
-	this.click=function(evt){
+	this.click=function(evt,x,y){
+		var _x = x||diesel.mouseX,
+		_y = y||diesel.mouseY;
+
 		for(i in this.clickZones){
-			if(this.clickZones[i].x < diesel.mouseX 
-				&& this.clickZones[i].x + this.clickZones[i].w > diesel.mouseX 
-				&& this.clickZones[i].y < diesel.mouseY
-				&& this.clickZones[i].y + this.clickZones[i].h > diesel.mouseY){
+			if(this.clickZones[i].x < _x
+				&& this.clickZones[i].x + this.clickZones[i].w > _x 
+				&& this.clickZones[i].y < _y
+				&& this.clickZones[i].y + this.clickZones[i].h > _y){
 					
-					this.clickZones[i].click();
+					this.clickZones[i].click(evt, _x,_y);
 				}
 			}
 	};
@@ -724,11 +726,11 @@ diesel.proto.game =  function(){
 			game.ticks++;
 			game.screens[game.activeScreen].update(event.args[0]);
 		},
-		"click":function(evt){
+		"click":function(evt,x,y){
 			if(game.screens[game.activeScreen] &&
 					game.screens[game.activeScreen].click){
 
-				game.screens[game.activeScreen].click(evt);
+				game.screens[game.activeScreen].click(evt,x,y);
 			}
 			
 		},
@@ -867,6 +869,15 @@ diesel.util.timeBetweenFrames= function(){
 	return 4;
 
 };
+
+
+diesel.util.getLocalCoords = function(x,y){
+	var rect = diesel.container.getBoundingClientRect();
+	return {
+	"x":x - rect.left - diesel.container.scrollLeft + window.pageXOffset,
+	"y":y - rect.top - diesel.container.scrollLeft + window.pageYOffset
+	};
+}
 
 diesel.util.fps =function(){
 	if(diesel.lastFrameTime>0){

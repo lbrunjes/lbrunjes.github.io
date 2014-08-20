@@ -1,4 +1,4 @@
-// built at Sun 17 Aug 2014 09:25:50 PM EDT
+// built at Wed 20 Aug 2014 02:34:22 PM EDT
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -46,6 +46,11 @@ var tankInstance = function(isServer){
 
 	this.level = null;
 	this.round =0;
+	this.mouseDown=false;
+
+	this.touches=[];
+	this.x;
+	this.y;
 
 
 
@@ -59,13 +64,18 @@ var tankInstance = function(isServer){
 		window.scrollMaxX=0;
 		window.scrollMaxY=0;
 		window.scrollbars.visible = false;
-
-
+		this.fontSize =32;
+		
 
 	}
 
 	this.startup = function(){
 		console.log("game startup");
+
+		var body = document.getElementsByTagName("body")[0].getBoundingClientRect(),
+		    el = document.getElementById(this.container).getBoundingClientRect();
+		this.y = el.top - body.top;
+		this.x = el.left - body.left;
 
 		var _player = diesel.load("player");
 		if(_player){
@@ -226,7 +236,7 @@ game.mixin.damageable= {
 			type="generic";
 		}
 		this.health -= amount;
-		console.log(amount, this.health);
+	//	console.log(amount, this.health);
 	},
 	"isDead":function(){
 		return this.health <=0;
@@ -340,7 +350,7 @@ game.objects.level = function(players){
 	this.generateTerrain = function(){
 		var	keys= [];
 		while(keys.length <= 3 || Math.random() < .8){
-			keys.push(Math.random() * game.height/2 + game.height/4);
+			keys.push(Math.random() * game.height/2 + game.height/2);
 		}
 		console.log("keys",keys);
 		var segment = (game.width/this.terrainScale)/(keys.length -1);
@@ -727,7 +737,8 @@ game.effects.explosion = function(x,y,radius){
 		
 		if(this.expand){
 			this.radiusNow += ticks * this.speedModifier;
-			if(this.radiusNow > this.radius){
+			this.radiusNow = Math.min(this.radius, this.radiusNow);
+			if(this.radiusNow >= this.radius){
 				this.expand =false;
 				
 			}
@@ -854,13 +865,21 @@ game.events.mousemove=function(e){
 		game.screens[game.activeScreen].mousemove(e);
 	}
 };
+
+
 game.events.mousedown=function(e){
+	game.mouseDown =true
 	if( game.screens[game.activeScreen].mousedown){
 		game.screens[game.activeScreen].mousedown(e);
 	}
 };
 
-
+game.events.mouseup=function(e){
+	game.mouseDown =false
+	if( game.screens[game.activeScreen].mouseup){
+		game.screens[game.activeScreen].mouseup(e);
+	}
+};
 
 ///
 //	tanks.events.webSocket.js
@@ -901,6 +920,77 @@ game.events.routeMessage= function(MessageEvent){
 
 
 
+///
+//	game.events.touch
+///
+if(!game.touches){
+	game.touches =[];
+}
+
+game.events.touchstart=function(e){
+	
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX, e.changedTouches[i].pageY);
+		game.touches.push({ identifier: e.changedTouches[i].identifier, 
+			x: coords.x,
+			y: coords.y });
+			if( game.screens[game.activeScreen].click){
+				game.screens[game.activeScreen].click(e.changedTouches[i],coords.x,coords.y);
+			}
+
+
+	}
+	
+};
+
+game.events.touchend=function(e){
+console.log("touchend")
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		for (var j =0; j <game.touches.length;j++){	
+			if(e.changedTouches[i].identifier == game.touches[j].identifier){
+				game.touches.splice(j,i);
+				return;
+			}
+		}
+	}
+	
+
+};
+
+// game.events.touchcancel=function(e){
+// 	e.preventDefault();
+// 	for(var i = 0; i < e.changedTouches.length;i++ ){
+// 		for (var j =0; j <game.touches.length;j++){	
+// 			if(e.changedTouches[i].identifier == game.touches[j].identifier){
+// 				game.touches.splice(j,i);
+// 			}
+// 		}
+// 	}
+// 	return false;
+// };
+
+game.events.touchmove=function(e){
+	
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX,
+		 e.changedTouches[i].pageY);
+
+		if( game.screens[game.activeScreen].touchmove){
+			game.screens[game.activeScreen].touchmove(e,coords.x, coords.y);
+		}
+		else{
+
+			if( game.screens[game.activeScreen].click){
+				game.screens[game.activeScreen].click(e,coords.x, coords.y);
+			}
+		}
+	}
+
+};
+
+// game.events.touchleave=function(e){
+// 	game.events.touchend(e);
+// };
 
 ///
 //  game.messages
@@ -1141,10 +1231,7 @@ game.screens.menu = function(){
 	];
 
 	this.reset = function(from, to){
-		this.screens ="";
-		for(var scrn in game.screens){
-			this.screens += " "+scrn;
-		}
+	
 
 	};
 
@@ -1155,9 +1242,10 @@ game.screens.menu = function(){
 		game.context.main.textAlign = "left";
 		var z;
 		game.context.main.fillText("MENU:  Diesel Tanks v"+game.version,0,game.fontSize);
-		game.context.main.fillText(this.screens,0,game.fontSize*2);
-		game.context.main.fillText("This requires web sockets, so get chrome for android if you gotta",0,game.fontSize*3);
-		game.context.main.fillText("The first player is the server, so you need to see their screen.",0,game.fontSize*4);
+		game.context.main.fillText("This requires web sockets,",0,game.fontSize*3);
+		game.context.main.fillText("Get chrome for android on your phone", 0, game.fontSize*4)
+		game.context.main.fillText("Chromecast the first player",0,game.fontSize*5);
+
 
 		game.context.main.strokeStyle="#666";
 
@@ -1253,13 +1341,13 @@ game.screens.client = function(){
 			click : function(evt){
 				
 				//send update
-				if(!evt || !evt.dragged){
-					var msg = new game.messages.gameUpdate();
-					msg.message = {"fire":game.localPlayer.tank};
-					game.ws.send(JSON.stringify(msg));
+				
+				var msg = new game.messages.gameUpdate();
+				msg.message = {"fire":game.localPlayer.tank};
+				game.ws.send(JSON.stringify(msg));
 
-					//todo draw line for this one
-				}	
+				//todo draw line for this one
+				
 
 			}
 		},
@@ -1268,9 +1356,12 @@ game.screens.client = function(){
 			y:game.height/4*3,
 			w: game.width/3*2,
 			h: 48,
-			click : function(){
+			click : function(x,y){
 				
-				game.screens.client.pct = (diesel.mouseX - game.screens.client.clickZones[1].x)/(game.screens.client.clickZones[1].w);
+				var _x = x||diesel.mouseX;
+				var _y = y||diesel.mouseY;
+
+				game.screens.client.pct = (_x - game.screens.client.clickZones[1].x)/(game.screens.client.clickZones[1].w);
 				var p =  Math.round(game.localPlayer.tank.maxPower * game.screens.client.pct);
 				game.localPlayer.tank.power = diesel.clamp(p,0,game.localPlayer.tank.maxPower * (game.localPlayer.tank.health/game.localPlayer.tank.maxHealth));
 				var msg = new game.messages.gameUpdate();
@@ -1282,26 +1373,23 @@ game.screens.client = function(){
 		
 
 		{
-			x:game.width/4, 
-			y:game.height/3,
-			w: game.width/2,
-			h: game.height/3,
-			click : function(evt){
-				//power down
-				console.log("aim arc");
+			x:0, 
+			y:game.height/4,
+			w: game.width,
+			h: game.height/12 *5,
+			click : function(x,y){
+				
+				var _x = x||diesel.mouseX;
+				var _y = y||diesel.mouseY;
 
+				//power down
+				
 				//check the distance to the origin
 
-				var dist= Math.pow(diesel.mouseX - game.screens.client.origin.x, 2) +
-					Math.pow(diesel.mouseY - game.screens.client.origin.y,2);
-
-
-
-				if(dist <= Math.pow(game.width/6+32,2) ){
-					var angle = Math.atan2(diesel.mouseX - game.screens.client.origin.x, 
-						diesel.mouseY - game.screens.client.origin.y)
+				var angle = Math.atan2(_x - game.screens.client.origin.x, 
+						_y - game.screens.client.origin.y)
 						game.localPlayer.tank.aim =  angle;
-				}
+				
 				
 				var msg = new game.messages.gameUpdate();
 				msg.message = {"aim":game.localPlayer.tank};
@@ -1414,8 +1502,8 @@ game.screens.client = function(){
 			this.clickZones[1].w,this.clickZones[1].h);
 
 		game.context.main.textAlign = "center";
-		game.context.main.fillText("POWER",this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y - this.fontSize/2 )
-		game.context.main.fillText(game.localPlayer.tank.power,this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y + this.clickZones[1].h + this.fontSize/2 )
+		game.context.main.fillStyle = "#fff";
+		game.context.main.fillText("POWER:"+game.localPlayer.tank.power,this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y + this.clickZones[1].h -this.fontSize /4);
 		
 
 
@@ -1424,7 +1512,7 @@ game.screens.client = function(){
 		context.lineCap = "round";
 		context.strokeStyle ="rgba(0,0,192, "+(.5 + Math.sin(diesel.frameCount/33)*.25)+")";
 		context.beginPath();
-		context.arc(this.origin.x, this.origin.y, game.width/6,0, Math.PI,true);
+		context.arc(this.origin.x, this.origin.y, game.width/6+32 ,0, Math.PI,true);
 		context.stroke();
 
 
@@ -1441,7 +1529,7 @@ game.screens.client = function(){
 
 	//	context.fillText("Current Turn:" +game.level.tanks[game.level.activePlayer].player, this.fontSize, this.fontSize);
 		context.fillText("aim:"+Math.round(diesel.degrees(game.localPlayer.tank.aim)), this.fontSize, this.fontSize*2);
-		context.fillText("power:"+ Math.round(game.localPlayer.tank.power), this.fontSize, this.fontSize*3);
+	//	context.fillText("power:"+ Math.round(game.localPlayer.tank.power), this.fontSize, this.fontSize*3);
 		context.fillText("health:"+Math.ceil(game.localPlayer.tank.health), this.fontSize, this.fontSize*4);
 
 		context.font = tmp;
@@ -1539,13 +1627,55 @@ game.screens.client = function(){
 
 	};
 	this.mousemove =function(evt){
+		var coords = diesel.util.getLocalCoords(evt.pageX, evt.pageY);
+			game.context.main.beginPath();
+			game.context.main.arc(coords.x, coords.y, 4, 0, 2*Math.PI, false);  // a circle at the start
+			game.context.main.fillStyle = "#f00";
+			game.context.main.fill();
 		
-		if(evt.button >0){
-			evt.dragged = true;
-			this.click(evt)
+			
+			this.click(evt,coords.x, coords.y);
 
+		
+	};
+	this.touchmove =function(evt,x,y){
+		
+		
+			
+			//SKIP FIRE
+			for(var  j = 1; j < this.clickZones.length;j++){
+				if(this.clickZones[j].x< x &&
+					this.clickZones[j].x +this.clickZones[j].w > x &&
+					this.clickZones[j].y < y &&
+					this.clickZones[j].y +this.clickZones[j].h > y){
+					this.clickZones[j].click(x,y);
+					
+				}
 
+			}
+		
+
+		
+	};
+	this.click =function(evt,x,y){
+
+	x = x ||diesel.mouseX;
+	y = y ||diesel.mouseY;
+
+	//SKIP FIRE
+	for(var  j = 0; j < this.clickZones.length;j++){
+		if(this.clickZones[j].x< x &&
+			this.clickZones[j].x +this.clickZones[j].w > x &&
+			this.clickZones[j].y < y &&
+			this.clickZones[j].y +this.clickZones[j].h > y){
+			this.clickZones[j].click(x,y);
+			
 		}
+
+	}
+
+
+
 	};
 
 
@@ -1699,19 +1829,19 @@ game.screens.gameList = function(){
 	this.clickZones =[
 		
 		{	//back
-			x:game.fontSize,
+			x:0,
 			y:game.fontSize,
-			w:game.fontSize *10,
+			w:game.width/3,
 			h:game.fontSize,
 			click:function(){
-				diesel.raiseEvent("changeScreen", "gameList","menu");
+				diesel.raiseEvent("screenChange", "gameList","menu");
 			}
 		},
 		{ //list
-			x: game.fontSize*3,
+			x: game.fontSize*1,
 			y: game.fontSize*3,
-			w: game.width - game.fontSize*6,
-			h: game.height - game.fontSize*6,
+			w: game.width - game.fontSize*2,
+			h: game.height - game.fontSize*2,
 			click:function(evt){
 
 				//did we select a game
@@ -1742,9 +1872,9 @@ game.screens.gameList = function(){
 			}
 		},
 		{	//refresh
-			x:game.width - game.fontSize *11,
+			x:game.width/3*2,
 			y:game.fontSize,
-			w:game.fontSize *10,
+			w:game.width/3,
 			h:game.fontSize,
 			click:function(){
 				game.screens.gameList.refresh();
@@ -1752,9 +1882,9 @@ game.screens.gameList = function(){
 			}
 		},
 		{	//createGame
-			x:game.width/2 - game.fontSize * 5,
+			x:game.width/3,
 			y:game.fontSize,
-			w:game.fontSize *10,
+			w:game.width/3,
 			h:game.fontSize,
 			click:function(){
 				var name = prompt("what is your game name?");
@@ -1793,10 +1923,10 @@ game.screens.gameList = function(){
 		}
 		game.context.main.save();
 
-		game.context.main.fillText("Back to menu",this.clickZones[0].x,this.clickZones[0].y+game.fontSize);
+		game.context.main.fillText("back",this.clickZones[0].x,this.clickZones[0].y+game.fontSize);
 
 		game.context.main.fillText("refresh",this.clickZones[2].x,this.clickZones[2].y+game.fontSize);
-		game.context.main.fillText("new game",this.clickZones[3].x,this.clickZones[3].y+game.fontSize);
+		game.context.main.fillText("new",this.clickZones[3].x,this.clickZones[3].y+game.fontSize);
 		
 		game.context.main.translate(this.clickZones[1].x,this.clickZones[1].y)
 		var netgame;
@@ -1806,10 +1936,7 @@ game.screens.gameList = function(){
 			netgame = this.networkGames[i];
 			game.context.main.translate(0,game.fontSize);
 			game.context.main.textAlign = "left";
-			game.context.main.fillText(netgame.id,game.fontSize,0);
-
-			game.context.main.textAlign = "right";
-			game.context.main.fillText(netgame.players +"/"+netgame.playerLimit+ " join",this.clickZones[1].w -game.fontSize ,0);
+			game.context.main.fillText(netgame.players +"/"+netgame.playerLimit+" "+netgame.id,game.fontSize,0, this.clickZones[1].w, game.fontSize);
 			if( i == this.selected){
 				game.context.main.fillText(">",0,0);
 			}
