@@ -1,4 +1,4 @@
-// built at Wed 20 Aug 2014 02:34:22 PM EDT
+// built at Fri 05 Sep 2014 05:38:33 PM EDT
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -32,7 +32,7 @@ var tankInstance = function(isServer){
 	// properties
 	this.isServer = isServer||false;
 	this.networkGame = false;
-	this.messageHost = "ws://housemark.co:9000";
+	this.messageHost = "ws:\\127.0.0.1:9000";
 
 	
 	this.players =[];
@@ -216,9 +216,10 @@ game.mixin.controlable = {
 		this.power = Math.round(Math.max(0,Math.min(this.power,this.maxPower)));
 	},
 	"fire":function(){
-		diesel.raiseEvent("fire", this);
 		this.isActive = false;
 		this.safetyOff = false;
+		diesel.raiseEvent("fire", this);
+		
 	}
 };
 
@@ -352,7 +353,7 @@ game.objects.level = function(players){
 		while(keys.length <= 3 || Math.random() < .8){
 			keys.push(Math.random() * game.height/2 + game.height/2);
 		}
-		console.log("keys",keys);
+		
 		var segment = (game.width/this.terrainScale)/(keys.length -1);
 		for(var x = 0 ; x < game.width / this.terrainScale;x++){
 			var last = Math.floor(x/segment);
@@ -827,13 +828,19 @@ game.events.explosion = function(evt){
 game.events.fire = function(evt){
 	//ge teh corrds from teh tank 
 	var tank = evt.args[0];
-	tank.isActive =0;
+	tank.isActive = 0;
 
 	
-	
+	var numbullets = game.level.effects.length;
+	// for(var i =0 ; i < game.level.effects.length;i++){
+	// 	if()
+	// }
 	//generate a projectile add it to the level
-	var bullet = new game.effects.bullet(tank);
-	game.level.effects.push(bullet);
+	//console.log("fire called ", numbullets, " effects");
+	if(numbullets===0){
+		var bullet = new game.effects.bullet(tank);
+		game.level.effects.push(bullet);
+	}
 
 	//TODO Sound.
 
@@ -893,9 +900,9 @@ game.events.routeMessage= function(MessageEvent){
 	var text = MessageEvent.data;
 
 	//console.log("recieved:",text);//, MessageEvent);
-
+	var data;
 	try{
-		var data= JSON.parse(text);
+		data= JSON.parse(text);
 		if(game.messages[data.type]){
 
 			var msg = new game.messages[data.type]();
@@ -912,7 +919,8 @@ game.events.routeMessage= function(MessageEvent){
 		}
 	}
 	catch(ex){
-		console.log("error parsing message:",ex)
+		console.log("error parsing message:",ex , data);
+		diesel.shouldLoop = false;
 	}
 
 }
@@ -1110,7 +1118,6 @@ game.messages.gameUpdate = function(){
 				diesel.raiseEvent("screenChange","gameList","server");
 			}
 		}
-
 		//we are in the right screen to parse our net message
 		game.screens[game.activeScreen].readNetMessage(this);
 
@@ -1657,6 +1664,16 @@ game.screens.client = function(){
 
 		
 	};
+	this.touchend =function(evt,x,y){
+		if(this.clickZones[0].x< x &&
+					this.clickZones[0].x +this.clickZones[0].w > x &&
+					this.clickZones[0].y < y &&
+					this.clickZones[0].y +this.clickZones[0].h > y){
+					this.clickZones[0].click(x,y);
+					
+				}
+
+	}
 	this.click =function(evt,x,y){
 
 	x = x ||diesel.mouseX;
@@ -1720,7 +1737,7 @@ game.screens.server = function(){
 	}
 	this.readNetMessage =function(gameUpdate){
 		var msg =gameUpdate.message;
-
+		console.log(msg);
 		//is it a join message
 		if(msg.joined){
 
@@ -1735,19 +1752,31 @@ game.screens.server = function(){
 			if(game.level.tanks.length < 2){
 				game.screens.server.reset();
 			}
-
+			
 
 		}
 		if(msg.dropped){
 			//setup an AI to take over.
+			console.log("dropped", msg.dropped);
 
-			var ai = game.ai.misterStupid();
+			var ai = new game.ai.misterStupid();
 
 			for(var i =0 ; i < game.level.tanks.length; i++){
 
 				if(game.level.tanks[i].player == msg.dropped.name){
 
 						diesel.addMixin(game.level.tanks[i],ai);
+						console.log("repalced with an AI");
+						
+				}
+
+			}
+			for(var i =0 ; i < game.players.length; i++){
+
+				if(game.players[i].name == msg.dropped.name){
+
+						diesel.addMixin(game.players[i],ai,true);
+					
 				}
 
 			}
@@ -1772,14 +1801,21 @@ game.screens.server = function(){
 
 		//show the fire effect
 		if(msg.fire){
-
-			if(msg.fire.player == game.level.tanks[game.level.activePlayer].player
-				&& game.level.effects.length == 0
+			console.log("fire", msg, msg.fire.player == game.level.tanks[game.level.activePlayer].player
+				, game.level.effects.length );
+			if(msg.fire.player === game.level.tanks[game.level.activePlayer].player
+				&& game.level.effects.length === 0
+				&& game.level.tanks[game.level.activePlayer].isActive
+				&& game.level.tanks[game.level.activePlayer].safteyOff
 				//TODO aim
 				//TODO power
 				){
-				game.level.tanks[game.level.activePlayer].aim = msg.fire.aim;
-				game.level.tanks[game.level.activePlayer].power = msg.fire.power;
+
+				var aim = diesel.clamp( msg.fire.aim, game.directions.left, game.directions.right),
+				power = diesel.clamp(msg,fire.power, 0,game.level.tanks[game.level.activePlayer].maxPower); 
+
+				game.level.tanks[game.level.activePlayer].aim = aim;
+				game.level.tanks[game.level.activePlayer].power = power;
 				game.level.tanks[game.level.activePlayer].fire();
 			}
 		}
@@ -1987,22 +2023,59 @@ game.ai.base = function(){
 	};
 	
 	this.selectWeapon=function(){
-
+	
 	};
 	
 	this.aim=function(){
-
+		console.log("AI not aiming, code issues");
 	};
 	
 	this.fire=function(){
-
+		this.isActive = false;
+		this.safetyOff = false;
+		diesel.raiseEvent("fire", this);
 	};
 
 	this.update =function(){
-		
+		console.log("AI not thinking, code issues");
 	}
 
 };
+///
+//	game.ai.misterStupid
+///
+
+game.ai.misterStupid = function(){
+	this.name ="AI #"+Math.round(Math.random() *100000).toString(16);
+	this.isAI ="misterStupid";
+	this.shouldOverride = true;
+	this.isPlayer =false;
+		
+	this.update = function(ticks){
+		
+		if(this.canFall && this.canFall()){
+			this.applyGravity();
+			//TODO calculate damage
+		}
+		else{
+
+			if(this.isActive){
+				//mister stupoid picks random number and adds it to power
+				this.power = Math.random() * this.maxPower;
+
+				//mister stupid takes a rtanomd number and adds it to aim
+				this.aim = diesel.clamp( this.aim + Math.random() - .5, game.directions.left, game.directions.right);
+
+				//mister stupid shoots;
+				this.fire();
+			}
+		}
+
+	}
+
+};
+game.ai.misterStupid.prototype = game.ai.base();
+
 ///
 // game.units.base
 ///
@@ -2057,7 +2130,7 @@ game.units.tank = function(x,y,player){
 			diesel.addMixin(this, game.mixin.controlable);
 		}
 		else{
-			diesel.addMixin(this, game.ai.misterStupid,true);
+			diesel.addMixin(this, player,true);	
 		}
 	}
 
@@ -2150,7 +2223,7 @@ game.units.tank = function(x,y,player){
 			}
 			else{
 
-				if(this.isPlayer){
+				if(!this.isAI){
 					this.readKeys(ticks);
 
 					//if we are active and the space key is note pressed we can then press tehy key to fire
@@ -2163,7 +2236,7 @@ game.units.tank = function(x,y,player){
 					}
 				}
 				else{
-					//TODO
+					
 				}
 			}
 		}
