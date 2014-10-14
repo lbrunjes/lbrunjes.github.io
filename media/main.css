@@ -1,3 +1,28 @@
+div, nav, header, footer{
+	display:block;
+	margin:0;
+	padding:0;
+	clear:both;
+	border:2px solid #eee;
+	border:2px solid rgba(0,0,0,0.06);
+}
 html{
 	font-family: monospace;
+	text-align:center;
+}
+#wrap{
+	margin:1em auto;
+	text-align:left;
+	width:640px;
+	border:none;
+
+}
+header img#avatar{
+	float:left;
+	margin:0 1ex;
+	width:64px;
+	height:64px;
+}
+h3{
+	margin:0;
 }
