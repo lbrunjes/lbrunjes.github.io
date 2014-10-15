@@ -3,6 +3,32 @@
 <head>
 	<link rel="stylesheet" href="media/main.css" media="all"/>
 	<title>Lee's Scratch space</title>
+	<script>
+
+	var box, context, timer, count = 0;
+	var drawBlinkyLights =function(){
+		var block = 6,w = box.width/block;
+		context.clearRect(0,0,box.width, box.height);
+		count += block/2;
+		//draw boxes
+		for(var i = 0 ; i < w ;i++){
+			var a = Math.sin((i+count)/(w/2))*.5 +.5;
+			context.fillStyle = "rgba(200,200,200,"+a+")";
+			context.fillRect(i *block +1, 0, block -2, box.height);
+
+		}
+	}
+
+	document.addEventListener("DOMContentLoaded", function(){
+		box = document.getElementById("box"),
+		context =box.getContext("2d")
+		timer = window.setInterval(drawBlinkyLights,1000/27);
+		
+	});
+
+
+
+</script>
 </head>
 <body>
 <div id="wrap">
@@ -32,7 +58,7 @@
 		<a href="http://twitter.com/lbrunjes">Twitter</a>
 		</div>
 	<footer>
-	 welp.
+	<canvas id="box"></canvas>
 	</footer>
 </div>
 </body>

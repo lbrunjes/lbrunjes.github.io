@@ -6,6 +6,11 @@ div, nav, header, footer{
 	border:2px solid #eee;
 	border:2px solid rgba(0,0,0,0.06);
 }
+canvas#box{
+	display:block;
+	width:100%;
+	height:1em;
+}
 html{
 	font-family: monospace;
 	text-align:center;
