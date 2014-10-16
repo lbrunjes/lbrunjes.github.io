@@ -1,4 +1,4 @@
-// built at Fri 05 Sep 2014 05:38:33 PM EDT
+// built at Thu 16 Oct 2014 09:52:42 AM EDT
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -32,7 +32,7 @@ var tankInstance = function(isServer){
 	// properties
 	this.isServer = isServer||false;
 	this.networkGame = false;
-	this.messageHost = "ws:\\127.0.0.1:9000";
+	this.messageHost = "ws:\\housemark.co:9000";
 
 	
 	this.players =[];
@@ -1737,7 +1737,7 @@ game.screens.server = function(){
 	}
 	this.readNetMessage =function(gameUpdate){
 		var msg =gameUpdate.message;
-		console.log(msg);
+		//console.log(msg);
 		//is it a join message
 		if(msg.joined){
 
