@@ -1,4 +1,4 @@
-// built at Thu 16 Oct 2014 09:52:42 AM EDT
+// built at Thu 16 Oct 2014 06:02:02 PM EDT
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -1368,12 +1368,15 @@ game.screens.client = function(){
 				var _x = x||diesel.mouseX;
 				var _y = y||diesel.mouseY;
 
+				game.localPlayer.tank.safetyOff
+
 				game.screens.client.pct = (_x - game.screens.client.clickZones[1].x)/(game.screens.client.clickZones[1].w);
 				var p =  Math.round(game.localPlayer.tank.maxPower * game.screens.client.pct);
 				game.localPlayer.tank.power = diesel.clamp(p,0,game.localPlayer.tank.maxPower * (game.localPlayer.tank.health/game.localPlayer.tank.maxHealth));
 				var msg = new game.messages.gameUpdate();
 				msg.message = {"aim":game.localPlayer.tank};
 				game.ws.send(JSON.stringify(msg));
+
 
 			}
 		},
@@ -1801,22 +1804,27 @@ game.screens.server = function(){
 
 		//show the fire effect
 		if(msg.fire){
-			console.log("fire", msg, msg.fire.player == game.level.tanks[game.level.activePlayer].player
-				, game.level.effects.length );
+			console.log("fire", msg,(msg.fire.player === game.level.tanks[game.level.activePlayer].player
+				&& game.level.effects.length === 0
+				&& game.level.tanks[game.level.activePlayer].isActive
+				&& game.level.tanks[game.level.activePlayer].safetyOff));
 			if(msg.fire.player === game.level.tanks[game.level.activePlayer].player
 				&& game.level.effects.length === 0
 				&& game.level.tanks[game.level.activePlayer].isActive
-				&& game.level.tanks[game.level.activePlayer].safteyOff
+				&& game.level.tanks[game.level.activePlayer].safetyOff
 				//TODO aim
 				//TODO power
 				){
-
 				var aim = diesel.clamp( msg.fire.aim, game.directions.left, game.directions.right),
-				power = diesel.clamp(msg,fire.power, 0,game.level.tanks[game.level.activePlayer].maxPower); 
-
+				power = diesel.clamp(msg.fire.power, 0,game.level.tanks[game.level.activePlayer].maxPower); 
+				
 				game.level.tanks[game.level.activePlayer].aim = aim;
 				game.level.tanks[game.level.activePlayer].power = power;
+				
 				game.level.tanks[game.level.activePlayer].fire();
+			}
+			else{
+				console.log("invalid");
 			}
 		}
 		//show the fire effect
