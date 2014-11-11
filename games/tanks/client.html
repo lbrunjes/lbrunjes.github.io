@@ -1,7 +1,7 @@
 <html>
 <head>
 <title>Tanks test</title>
-<meta name="viewport" content="width=device-width, user-scalable=no">
+<meta name="viewport" content="width=640px, user-scalable=no">
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script src="../diesel.js"></script>
 <script src="client.js"></script>
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function(){
 	<div id="setup">
 		<form id="setupForm">
 			<label for="name">Name</label><input name="name" type="text"/>
-			<label for="color">Tank Color </label><input name="color" type="color"/>
+			<label for="color">Tank Color </label><input name="color" type="color" value="#ffffff"/>
 
 			<label for="game">Game Code</label><input name="game" type="text"/>
 			<label for="submit">&nbsp;</label><input name="submit" type="submit" value="Join Game" />
@@ -73,8 +73,8 @@ document.addEventListener("DOMContentLoaded", function(){
 		</div>
 		<div id="controls">
 			<form id="gameControls">
-				<label for="angle">angle</label><input id="angle" name="angle" type="range" min="-90" max="90"/> <span id="angledisplay">0</span>
-				<label for="power">power</label><input id="power" name="power" type="range" min="0" max="1000"/><span id="powerdisplay">200</span>
+				<label for="angle">angle</label><input id="angle" name="angle" type="range" min="-90" max="90" style="width:100%"/> <span id="angledisplay">0</span>
+				<label for="power">power</label><input id="power" name="power" type="range" min="0" max="1000"  style="width:100%"/><span id="powerdisplay">200</span>
 				<label for="fire">&nbsp;</label><input name="fire" type="submit" value="fire"/>
 			</form>
 		</div>
@@ -84,9 +84,8 @@ document.addEventListener("DOMContentLoaded", function(){
 		<div>
 		<pre id="todo">
 TODO
-connect to game
 clean up display/style
-join game
+fix bugs
 	</pre>
 		</div>
 </div>
