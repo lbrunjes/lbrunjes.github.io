@@ -1,4 +1,4 @@
-// built at Mon 10 Nov 2014 04:21:05 PM EST
+// built at Tue 11 Nov 2014 01:50:39 PM EST
 ///
 //	index.js
 ///
@@ -45,6 +45,7 @@ var client= function(host){
 								//set the local clien to match
 								$("input[name=angle]").val(diesel.degrees(msg.message.newLevel.tanks[i].aim -Math.PI));
 								$("input[name=power]").val(msg.message.newLevel.tanks[i].power);
+								client.draw();
 							}
 						}
 

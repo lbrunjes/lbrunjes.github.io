@@ -1,4 +1,4 @@
-// built at Mon 10 Nov 2014 04:21:05 PM EST
+// built at Tue 11 Nov 2014 01:50:39 PM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -329,7 +329,11 @@ this.objects.level = function(players){
 		
 		this.placeTanks();
 		game.screens.server.match 
+
 		//TODO update active player;
+		this.activePlayer = game.round %this.tanks;
+		game.round++;
+
 
 		diesel.game.level =this;
 
@@ -362,10 +366,13 @@ this.objects.level = function(players){
 
 	this.placeTanks = function(){
 	
-		var step = Math.floor(diesel.game.width / (game.players.length +1)); 
+		var step = Math.floor(diesel.game.width / (players.length)); 
+	
+		for(var i = 0; i < players.length; i++){
 
-		for(var i = 0; i < game.players.length; i++){
-			var x = Math.round(step * (i + 1) + (step *.5) * (Math.random()-.5));
+			var x = diesel.clamp(Math.round(step * (i) + (step *.5) * (Math.random()-.5)),
+				step/2, game.width-step/2);
+	
 			if(players[i].color){
 				this.tanks.push(new diesel.game.units.tank(x, 0, players[i]));
 		
