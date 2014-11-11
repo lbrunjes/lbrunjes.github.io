@@ -39,7 +39,7 @@ var tread =function(){
 	// properties
 	this.isServer =true;
 	this.networkGame = null;
-	this.messageHost = "ws:\\127.0.0.1:9000";
+	this.messageHost = "ws:\\housemark.co:9000";
 		
 	this.players =[];
 	this.maxPlayers =2;

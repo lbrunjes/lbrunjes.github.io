@@ -13,7 +13,7 @@ var client= function(host){
 
 	this.context={"tank":true};
 	this.connection = null
-	this.messageHost = host || "ws://127.0.0.1:9000";
+	this.messageHost = host || "ws://housemark.co:9000";
 
 	this.screens = {
 		"webclient":{
