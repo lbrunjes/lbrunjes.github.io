@@ -1,0 +1,94 @@
+<html>
+<head>
+<title>Tanks test</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="../diesel.js"></script>
+<script src="client.js"></script>
+<link rel="stylesheet" href="game.css" type="text/css" media= "all"/>
+
+<style>
+#client{
+	width:640px;
+}
+#client div{
+	clear:both;
+}
+#game{
+	clear:both;
+	
+}
+
+
+#setup *,#controls *{
+	float:left;
+	padding:1ex;
+
+
+}
+#setup label,#controls label{
+	clear:left;
+	margin-right:1em;
+	width:10em;
+	text-align:right;
+}
+#tank{
+	 height:480px;
+	 width:640px;
+	 width:100%;
+	 background:#000;
+	 display:block;
+	 position:relative;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+		
+		diesel.start(client);
+		
+	}, false);
+
+</script>
+
+</head>
+<body>
+<div id="client">
+	<div id="setup">
+		<form id="setupForm">
+			<label for="name">Name</label><input name="name" type="text"/>
+			<label for="color">Tank Color </label><input name="color" type="color"/>
+
+			<label for="game">Game Code</label><input name="game" type="text"/>
+			<label for="submit">&nbsp;</label><input name="submit" type="submit" value="Join Game" />
+			
+		</form>
+	</div>
+	<div id="game">
+		<div id="status">
+		Disconnected
+		</div>
+		<div id="display">
+			<canvas id="tank"></canvas>
+		</div>
+		<div id="controls">
+			<form id="gameControls">
+				<label for="angle">angle</label><input id="angle" name="angle" type="range" min="-90" max="90"/> <span id="angledisplay">0</span>
+				<label for="power">power</label><input id="power" name="power" type="range" min="0" max="1000"/><span id="powerdisplay">200</span>
+				<label for="fire">&nbsp;</label><input name="fire" type="submit" value="fire"/>
+			</form>
+		</div>
+
+	
+	</div>
+		<div>
+		<pre id="todo">
+TODO
+connect to game
+clean up display/style
+join game
+	</pre>
+		</div>
+</div>
+</body>
+</html>
