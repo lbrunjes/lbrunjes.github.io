@@ -1,4 +1,4 @@
-// built at Tue 11 Nov 2014 01:50:39 PM EST
+// built at Wed 12 Nov 2014 10:41:06 AM EST
 ///
 //	cast API
 ///
@@ -893,7 +893,7 @@ this.objects.level = function(players){
 		game.screens.server.match 
 
 		//TODO update active player;
-		this.activePlayer = game.round %this.tanks;
+		this.activePlayer = (game.round % (game.players.length -1))||0;
 		game.round++;
 
 
