@@ -1,4 +1,4 @@
-// built at Wed 12 Nov 2014 10:41:06 AM EST
+// built at Wed 12 Nov 2014 11:15:52 AM EST
 ///
 //	cast API
 ///
@@ -39,7 +39,7 @@ var tread =function(){
 	// properties
 	this.isServer =true;
 	this.networkGame = null;
-	this.messageHost = "ws:\\housemark.co:9000";
+	this.messageHost = "ws://housemark.co:9000";
 		
 	this.players =[];
 	this.maxPlayers =2;
