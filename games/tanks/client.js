@@ -1,4 +1,4 @@
-// built at Wed 12 Nov 2014 10:41:06 AM EST
+// built at Wed 12 Nov 2014 08:13:07 PM EST
 ///
 //	index.js
 ///
@@ -20,14 +20,14 @@ var client= function(host){
 
 			"readNetMessage":function(msg){
 				if(msg.message){
-					console.log(msg.message);
+					
 					if(msg.message.heartbeat){
 						///??
 					}
 
 					if(msg.message.nextTurn){
 						for(var i = 0 ;i < msg.message.nextTurn.tanks.length;i++){
-							if(msg.message.nextTurn.tanks[i].player=== client.player.name){
+							if(msg.message.nextTurn.tanks[i].player === client.player.name){
 								 //TODO let the player know it's their turn.
 								 if(msg.message.nextTurn.tanks[i].isActive){
 
@@ -59,7 +59,7 @@ var client= function(host){
 	
 	
 	this.init = function(){
-		console.log("client inited");
+		console.log("client inited", client.weapons);
 		diesel.shouldLoop=false;
 
 
@@ -72,7 +72,8 @@ var client= function(host){
 		this.player = new this.objects.player();
 		var player = diesel.events.load("player");
 		if(player){
-			this.player = player;
+			this.player.name = player.name;
+			this.player.color = player.color;
 		}else{
 			console.log("using defaults");
 		}
@@ -372,7 +373,7 @@ this.objects.base.prototype = new diesel.proto.objectBase();
 
 this.objects.player = function(name, color){
 	this.name= name|| "fred";
-	this.color = color||"#"+Math.floor(Math.random()*4096).toString(16);
+	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
 	//todo icon:[],
 	this.cash =0;
 	this.alive=true;
@@ -381,9 +382,20 @@ this.objects.player = function(name, color){
 	this.isCastAPI =false;
 	this.ready =false;
 	
+	this.weapons = {};
+	this.activeWeapon = null;
 
 	this.init= function(){
+		var most=0,wname="none";
+		for(var wep in diesel.game.weapons){
+			this.weapons[wep] = diesel.game.weapons[wep].start;
+			if(this.weapons[wep]> most){
+				most = this.weapons[wep];
+				wname = wep;
+			}
 
+			this.activeWeapon = wname;
+		}
 	}
 
 	this.init();
@@ -426,6 +438,7 @@ this.units.tank = function(x,y,player){
 	this.isPlayer = true;
 	this.isActive = false;
 	this.safetyOff = false;
+	this.weapon = "babyMissile"
 
 
 	this.init = function(player){
@@ -436,7 +449,7 @@ this.units.tank = function(x,y,player){
 		diesel.mixin.addMixin(this, diesel.game.mixin.damageable);
 		diesel.mixin.addMixin(this, diesel.game.mixin.gravity);
 		diesel.mixin.addMixin(this,  diesel.game.mixin.controlable);
-		
+		this.weapon = player.activeWeapon;
 		
 	
 
@@ -550,6 +563,7 @@ this.units.tank = function(x,y,player){
 			"color":this.color,
 			//"aimRate":1,
 			//"powerRate":100}
+			"weapon":this.weapon
 
 		};
 	};
@@ -557,6 +571,36 @@ this.units.tank = function(x,y,player){
 }
 
 this.units.tank.prototype = new this.units.base();
+
+///
+//	game.weapons
+///
+
+this.weapons = {
+
+	babyMissile:{
+		start:99,
+		radius:15,
+		cost:0
+	},
+	missile:{
+		start:5,
+		radius:30,
+		cost:50
+	},
+	bigMissile:{
+		start:3,
+		radius:45,
+		cost:100
+	},
+	nuke:{
+		start:1,
+		radius:500,
+		cost:500	
+	}
+
+};
+
 
 ///
 //	end.js
@@ -579,8 +623,15 @@ $(document).ready(function(){
 		console.log("settup submitted");
 		e.preventDefault();
 		//read the user
+		//we need to reinitialize the player per connect attempt mor bad times happen.
+		client.player = new client.objects.player();
+	
+		
+
 		client.player.name = $("input[name=name]").val();
 		client.player.color = $("input[name=color]").val();
+
+
 		
 		diesel.events.save("player", client.player);
 		client.tank = new client.units.tank(0,0,client.player);
@@ -596,6 +647,8 @@ $(document).ready(function(){
 			//$("#setup").hide();
 			client.draw();
 			//$("#game").show();
+
+			//TODO decrea count of the item you used.
 
 		}	
 		
@@ -650,6 +703,25 @@ $(document).ready(function(){
 		client.connection.send(msg);
 
 		
+	});
+
+	$("#weapons button").click(function(e){
+		console.log("click");
+		$("#weapons button").removeClass("selected");
+
+		var $this = $(this), text = $this.attr("id");
+		if(client.player.weapons[text] > 0){
+			client.tank.weapon = text;
+			
+			$this.addClass("selected");
+		}
+		else{
+			
+			client.tank.weapon = "babyMissile";
+			$("#weapons button:first").addClass("selected");
+			
+		}
+
 	});
 });
 

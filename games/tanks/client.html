@@ -40,6 +40,9 @@
 	 display:block;
 	 position:relative;
 }
+button.selected{
+background:#f00;
+}
 </style>
 
 <script>
@@ -72,10 +75,16 @@ document.addEventListener("DOMContentLoaded", function(){
 			<canvas id="tank"></canvas>
 		</div>
 		<div id="controls">
+			<div id="weapons">
+				<button id="babyMissile" count="-1" class="selected">Puny Missile</button>
+				<button id="missile" count="0" >Missile</button>
+				<button id="bigMissile" count="0" >Embiggened Missile</button>
+				<button id="nuke" count="0" >Nuke</button>
+			</div>
 			<form id="gameControls">
 				<label for="angle">angle</label><input id="angle" name="angle" type="range" min="-90" max="90" style="width:100%"/> <span id="angledisplay">0</span>
 				<label for="power">power</label><input id="power" name="power" type="range" min="0" max="1000"  style="width:100%"/><span id="powerdisplay">200</span>
-				<label for="fire">&nbsp;</label><input name="fire" type="submit" value="fire"/>
+				<label for="fire">&nbsp;</label><input name="fire"  id="fire" type="submit" value="fire"/>
 			</form>
 		</div>
 

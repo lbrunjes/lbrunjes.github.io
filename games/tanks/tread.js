@@ -1,4 +1,4 @@
-// built at Wed 12 Nov 2014 11:15:52 AM EST
+// built at Wed 12 Nov 2014 08:13:07 PM EST
 ///
 //	cast API
 ///
@@ -279,6 +279,13 @@ this.effects.bullet = function(tank){
 	
 	this.init = function(){
 		diesel.addMixin(this, diesel.game.mixin.gravity);
+
+		//remove a bullet from teh players inventroy for shooting.
+		for(var i = 0 ;i < diesel.game.players.length;i++){
+			if(diesel.game.players[i].name == tank.player){
+				diesel.game.players[i].weapons[tank.weapon]--;
+			}
+		}
 	};
 
 	this.draw=function(econtext ,context){
@@ -366,11 +373,11 @@ this.effects.bullet.prototype = new this.objects.base();
 //	this.effects.explosion
 ///
 
-this.effects.explosion = function(x,y,radius){
+this.effects.explosion = function(x,y,weapon){
 
 	this.x = x;
 	this.y = y;
-	this.radius = radius|| 5;
+	this.radius = 15;
 	this.radiusNow= 1;
 	this.expand = true;
 	this.shade = 128;
@@ -378,6 +385,14 @@ this.effects.explosion = function(x,y,radius){
 	this.isActive =true;
 	this.damage = 600;
 	this.type="explosion";
+
+	this.init = function(weapon){
+		
+		if(weapon){
+			console.log("using",weapon )
+			this.radius = weapon.radius||this.radius;
+		}
+	}
 	
 	this.draw = function(eContext, context){
 		if(this.isActive){
@@ -433,7 +448,9 @@ this.effects.explosion = function(x,y,radius){
 
 		}
 
-};
+	};
+
+	this.init(weapon);
 
 }
 this.effects.explosion.prototype = new this.objects.base();
@@ -540,8 +557,11 @@ this.events.endLevel = function(evt){
 
 this.events.explosion = function(evt){
 	var bullet = evt.args[0];
-	//TODO weapon scaling etc
-	var explosion = new game.effects.explosion(bullet.x, bullet.y, 15);
+	//TODO weapon scaling etcc
+	console.log(bullet.weapon);
+	
+	var explosion = new game.effects.explosion(bullet.x, bullet.y,
+	 diesel.game.weapons[bullet.weapon]);
 	game.sound.instance.startTone(222,300);
 				
 	game.screens.server.level.effects.push(explosion);
@@ -573,6 +593,7 @@ this.events.fire = function(evt){
 		//generate a projectile add it to the level
 		if(numbullets<=0){
 			var bullet = new diesel.game.effects.bullet(tank);
+			
 			level.effects.push(bullet);
 
 			//raise a turn change event.
@@ -935,13 +956,11 @@ this.objects.level = function(players){
 			var x = diesel.clamp(Math.round(step * (i) + (step *.5) * (Math.random()-.5)),
 				step/2, game.width-step/2);
 	
-			if(players[i].color){
+			if(players[i].color && players[i].name != "server"){
 				this.tanks.push(new diesel.game.units.tank(x, 0, players[i]));
 		
 			}
 			else{
-
-				console.log("no tank for", players[i].name);
 				this.numTanks --;
 			}
 		}
@@ -1131,7 +1150,7 @@ this.objects.level.prototype = new this.objects.base();
 
 this.objects.player = function(name, color){
 	this.name= name|| "fred";
-	this.color = color||"#"+Math.floor(Math.random()*4096).toString(16);
+	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
 	//todo icon:[],
 	this.cash =0;
 	this.alive=true;
@@ -1140,9 +1159,20 @@ this.objects.player = function(name, color){
 	this.isCastAPI =false;
 	this.ready =false;
 	
+	this.weapons = {};
+	this.activeWeapon = null;
 
 	this.init= function(){
+		var most=0,wname="none";
+		for(var wep in diesel.game.weapons){
+			this.weapons[wep] = diesel.game.weapons[wep].start;
+			if(this.weapons[wep]> most){
+				most = this.weapons[wep];
+				wname = wep;
+			}
 
+			this.activeWeapon = wname;
+		}
 	}
 
 	this.init();
@@ -1226,6 +1256,8 @@ this.screens.server = function(){
 		var msg = new game.messages.gameUpdate();
 		msg.message = {"newLevel":this.level};
 		game.ws.send(JSON.stringify(msg));
+
+		console.log("on level screen");
 
 	};
 
@@ -1333,6 +1365,7 @@ this.screens.server = function(){
 				
 				game.level.tanks[game.level.activePlayer].aim = aim;
 				game.level.tanks[game.level.activePlayer].power = power;
+				game.level.tanks[game.level.activePlayer].weapon = msg.fire.weapon|| "babyMissile";
 				
 				game.level.tanks[game.level.activePlayer].fire();
 				game.sound.instance.startTone(game.level.tanks[game.level.activePlayer].power/game.level.tanks[game.level.activePlayer].aim,100);
@@ -1496,7 +1529,19 @@ this.screens.setup  = function(){
 				var players = msg.message.heartbeat;
 
 				//this is an array of players.
-				diesel.game.players = players;
+				for(var i = 0; i < players.length;i++){
+					if(diesel.game.players[i]){
+						if(diesel.game.players[i].name != players[i].name){
+							var p = new diesel.game.objects.player(players[i].name,players[i].color);
+							diesel.game.players[i] = p;
+						}
+					}
+					else{
+						var p = new diesel.game.objects.player(players[i].name,players[i].color);
+						diesel.game.players.push(p);
+					}
+
+				}
 			}
 
 
@@ -1606,6 +1651,7 @@ this.units.tank = function(x,y,player){
 	this.isPlayer = true;
 	this.isActive = false;
 	this.safetyOff = false;
+	this.weapon = "babyMissile"
 
 
 	this.init = function(player){
@@ -1616,7 +1662,7 @@ this.units.tank = function(x,y,player){
 		diesel.mixin.addMixin(this, diesel.game.mixin.damageable);
 		diesel.mixin.addMixin(this, diesel.game.mixin.gravity);
 		diesel.mixin.addMixin(this,  diesel.game.mixin.controlable);
-		
+		this.weapon = player.activeWeapon;
 		
 	
 
@@ -1730,6 +1776,7 @@ this.units.tank = function(x,y,player){
 			"color":this.color,
 			//"aimRate":1,
 			//"powerRate":100}
+			"weapon":this.weapon
 
 		};
 	};
@@ -1737,6 +1784,36 @@ this.units.tank = function(x,y,player){
 }
 
 this.units.tank.prototype = new this.units.base();
+
+///
+//	game.weapons
+///
+
+this.weapons = {
+
+	babyMissile:{
+		start:99,
+		radius:15,
+		cost:0
+	},
+	missile:{
+		start:5,
+		radius:30,
+		cost:50
+	},
+	bigMissile:{
+		start:3,
+		radius:45,
+		cost:100
+	},
+	nuke:{
+		start:1,
+		radius:500,
+		cost:500	
+	}
+
+};
+
 
 ////
 // END
