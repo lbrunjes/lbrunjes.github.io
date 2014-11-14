@@ -20,7 +20,7 @@
 }
 
 
-#setup *,#controls *{
+#setup *,#controls input, #controls label, #controls span{
 	float:left;
 	padding:1ex;
 
@@ -43,11 +43,31 @@
 button.selected{
 background:#f00;
 }
+#weapons{
+	width:100%;
+	margin:0;
+	padding:0;
+	text-align:center;
+
+}
+
+#weapons button{
+	width:20%;
+	display:inline-block;
+}
+#items{
+	text-align:left;
+
+}
+#items div{
+
+display:inline-block;
+padding:1ex;
+}
 </style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-		
 		diesel.start(client);
 		
 	}, false);
@@ -74,28 +94,33 @@ document.addEventListener("DOMContentLoaded", function(){
 		<div id="display">
 			<canvas id="tank"></canvas>
 		</div>
+	
 		<div id="controls">
 			<div id="weapons">
 				<button id="babyMissile" count="-1" class="selected">Puny Missile</button>
 				<button id="missile" count="0" >Missile</button>
 				<button id="bigMissile" count="0" >Embiggened Missile</button>
 				<button id="nuke" count="0" >Nuke</button>
-			</div>
+			</div>		
 			<form id="gameControls">
-				<label for="angle">angle</label><input id="angle" name="angle" type="range" min="-90" max="90" style="width:100%"/> <span id="angledisplay">0</span>
-				<label for="power">power</label><input id="power" name="power" type="range" min="0" max="1000"  style="width:100%"/><span id="powerdisplay">200</span>
+				<label for="angle">angle <span id="angledisplay">0</span></label><input id="angle" name="angle" type="range" min="-90" max="90" style="width:100%"/> 
+				<label for="power">power <span id="powerdisplay">200</span></label><input id="power" name="power" type="range" min="0" max="1000"  style="width:100%"/>
 				<label for="fire">&nbsp;</label><input name="fire"  id="fire" type="submit" value="fire"/>
 			</form>
+		</div>
+
+		<div id="buying">
+			<div id="dollas">$##########</div>
+
+			<div id="items">
+				
+			</div>
+
 		</div>
 
 	
 	</div>
 		<div>
-		<pre id="todo">
-TODO
-clean up display/style
-fix bugs
-	</pre>
 		</div>
 </div>
 </body>

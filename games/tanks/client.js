@@ -1,4 +1,4 @@
-// built at Wed 12 Nov 2014 08:13:07 PM EST
+// built at Fri 14 Nov 2014 11:26:18 AM EST
 ///
 //	index.js
 ///
@@ -17,7 +17,8 @@ var client= function(host){
 
 	this.screens = {
 		"webclient":{
-
+			"draw":function(){},
+			"update":function(){},
 			"readNetMessage":function(msg){
 				if(msg.message){
 					
@@ -46,20 +47,35 @@ var client= function(host){
 								$("input[name=angle]").val(diesel.degrees(msg.message.newLevel.tanks[i].aim -Math.PI));
 								$("input[name=power]").val(msg.message.newLevel.tanks[i].power);
 								client.draw();
+
+
+
+							}
+
+
+						}
+					}
+					if(msg.message.players){
+						//TODO check my inventory
+						for(var i = 0 ;i < msg.message.players.length;i++){
+							if(msg.message.players[i].name === client.player.name){
+								client.player.weapons = msg.message.players[i].weapons;
+								client.player.cash = msg.message.players[i].cash;
+								client.draw();
 							}
 						}
-
 					}
 				}
 
 			}
 		}
 	};
+
 	this.activeScreen = "webclient";
 	
 	
 	this.init = function(){
-		console.log("client inited", client.weapons);
+		console.log("client inited");
 		diesel.shouldLoop=false;
 
 
@@ -77,9 +93,15 @@ var client= function(host){
 		}else{
 			console.log("using defaults");
 		}
+
+		
 		
 		
 	};
+	this.startup = function(){
+		console.log("startup")
+		this.addItemsToStore();
+	}
 
 
  	this.draw = function(){
@@ -93,12 +115,77 @@ var client= function(host){
  		this.tank.draw(diesel.game.context.tank, true);
  		client.context.tank.restore();
 
+ 		//draw the aim, power, and health
+ 		client.context.tank.fillStyle = "#fff";
+ 		client.context.tank.fillText(Math.round(diesel.degrees(client.tank.aim)), game.width-75,25);
+ 		client.context.tank.fillText(client.tank.power, game.width-75,50);
+ 		client.context.tank.fillText(client.tank.health, game.width-75,75);
+
+ 		//draw how much of each item you have?
+ 		var x =1;
+ 		for(var wep in client.player.weapons){
+ 			client.context.tank.fillText(client.player.weapons[wep] + " " + client.weapons[wep].name,
+ 			 25, 25 *x);
+			x++; 			 
+
+ 		}
+
 
 		document.getElementById("status").innerHTML = this.network.states[this.connection.readyState];
-
+		document.getElementById("dollas").innerHTML = "$"+this.player.cash;
 	};
 
-//load from localstorage in the thing.
+	this.addItemsToStore = function(){
+
+		var items = "";
+
+		for(var wep in client.weapons){
+			items += 
+			'<div class="item" item="'+wep+'" cost="'+client.weapons[wep].cost+
+			'"><a href="#">'+client.weapons[wep].name +'</a> $'+
+			client.weapons[wep].cost+'</div>';
+
+		}
+
+
+		document.getElementById("items").innerHTML = items;
+
+		$("div.item a").click(function(e){
+		console.log("xx");
+		e.preventDefault();
+		//get the item details
+		var item = $(this).closest("div.item").attr("item"),
+		cost = client.weapons[item].cost;
+
+		// do we have the $$
+		if(client.player.cash >= cost){
+
+			//deduct the $$$
+			client.player.cash -= cost;
+
+			//add an item to our request
+			if(!client.player.weapons[item]){
+				client.player.weapons[item] =1;
+			}
+			else{
+				client.player.weapons[item]++;
+			}
+
+			//send the request.
+			var msg = new client.messages.gameUpdate();
+			msg.message = {"buy":item};
+
+			client.draw();
+		}
+		else{
+			alert("You ain't got that much cash");
+		}
+
+	});
+
+	}
+
+
 
 
 ///
@@ -375,7 +462,7 @@ this.objects.player = function(name, color){
 	this.name= name|| "fred";
 	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
 	//todo icon:[],
-	this.cash =0;
+	this.cash =100;
 	this.alive=true;
 	this.isAI = false;
 	this.tank = null;
@@ -581,22 +668,26 @@ this.weapons = {
 	babyMissile:{
 		start:99,
 		radius:15,
-		cost:0
+		cost:0,
+		name:"Baby Missile"
 	},
 	missile:{
 		start:5,
 		radius:30,
-		cost:50
+		cost:50,
+		name:"Missile"
 	},
 	bigMissile:{
 		start:3,
 		radius:45,
-		cost:100
+		cost:100,
+		name:"Big Missile"
 	},
 	nuke:{
 		start:1,
 		radius:500,
-		cost:500	
+		cost:500,
+		name:"Nuke"	
 	}
 
 };
@@ -609,7 +700,7 @@ this.weapons = {
 
 this.init();
 };
-client.prototype= diesel.proto.game;
+client.prototype = new diesel.proto.game ();
 client = new client();///
 //	events.js
 ///
@@ -696,11 +787,19 @@ $(document).ready(function(){
 
 	$("#gameControls").submit(function(e){
 		e.preventDefault();
+		// validate the request
+		if(client.player.weapons[client.tank.weapon] > 0){
+			client.player.weapons[client.tank.weapon]--;
 
-		//send the fire command to the server.
-		var msg = new client.messages.gameUpdate();
-		msg.message = {"fire":client.tank};
-		client.connection.send(msg);
+			//send the fire command to the server.
+			var msg = new client.messages.gameUpdate();
+			msg.message = {"fire":client.tank};
+			client.connection.send(msg);
+		}
+		else{
+			alert("you are fresh out of " +client.tank.weapon);
+			//TODO sound;
+		}
 
 		
 	});
@@ -723,5 +822,6 @@ $(document).ready(function(){
 		}
 
 	});
+	
 });
 

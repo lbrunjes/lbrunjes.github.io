@@ -1,4 +1,4 @@
-// built at Wed 12 Nov 2014 08:13:07 PM EST
+// built at Fri 14 Nov 2014 11:26:18 AM EST
 ///
 //	cast API
 ///
@@ -63,6 +63,10 @@ var tread =function(){
 
 	
 	this.activeScreen="setup";
+
+	
+	this.everyLevelAddCash = 50;
+	this.levelWinnerBonus = 100;
 
 	this.init =function(){
 		
@@ -389,7 +393,7 @@ this.effects.explosion = function(x,y,weapon){
 	this.init = function(weapon){
 		
 		if(weapon){
-			console.log("using",weapon )
+			
 			this.radius = weapon.radius||this.radius;
 		}
 	}
@@ -528,12 +532,28 @@ this.events.endLevel = function(evt){
 
 	if(tanks[ended].health >0){
 		//last person alive
-		console.log("victory");
+		//console.log("victory");
 		message = tanks[ended].player + " wins!";
 	}
 	else{
-		console.log("draw");
+		//console.log("draw");
 	}
+
+	//give every player a few dollars.
+	for(var i =0; i <  game.players.length; i++){
+		if(game.players[i].cash>0){
+			game.players[i].cash += game.everyLevelAddCash;
+		}
+		else{
+			game.players[i].cash = game.everyLevelAddCash;
+		}
+		if(game.players[i].name === tanks[ended].player && tanks[ended].health>0){
+			//give the winner a bonus
+			game.players[i].cash += game.levelWinnerBonus;
+
+		}
+	}
+	
 
 	//show  player won message
 	var effect = new game.effects.text(message, this.width/2, this.height/2);
@@ -541,7 +561,14 @@ this.events.endLevel = function(evt){
 	//change to the next Level or the buy screen
 	effect.after = function(){
 
-		diesel.raiseEvent("screenChange", game.activeScreen, game.activeScreen);
+		diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+		var msg = new game.messages.gameUpdate();
+		msg.message = {
+			"endLevel":this.level,
+			"players":game.players
+	};
+		game.ws.send(JSON.stringify(msg));
+
 
 	};
 	game.screens.server.level.effects.push(effect);
@@ -557,8 +584,8 @@ this.events.endLevel = function(evt){
 
 this.events.explosion = function(evt){
 	var bullet = evt.args[0];
-	//TODO weapon scaling etcc
-	console.log(bullet.weapon);
+
+
 	
 	var explosion = new game.effects.explosion(bullet.x, bullet.y,
 	 diesel.game.weapons[bullet.weapon]);
@@ -902,6 +929,10 @@ this.objects.level = function(players){
 
 	this.activePlayer = 0;
 	this.numTanks = players.length;
+	this.ended= false;
+	this.stats = {
+
+	};
 
 
 
@@ -1079,7 +1110,9 @@ this.objects.level = function(players){
 	};
 
 	this.nextPlayer=function(){
-
+		if(this.ended){
+			return;
+		}
 		var start = this.activePlayer,
 		next = (this.activePlayer+1)%this.tanks.length;
 
@@ -1099,7 +1132,14 @@ this.objects.level = function(players){
 		// if we are were we started with either  tie or a win
 		// or if we only have one or fewer active tanks
 		if(next === start || numActive < 2){
-			console.log("ending level");
+			this.ended =true;
+			if(this.tanks[next].health>0){
+				this.stats.winner= this.tanks[next].player;
+			}
+			else{
+				this.stats.draw = true;
+			}
+
 			diesel.raiseEvent("endLevel", this.tanks, next);
 			
 		}
@@ -1152,7 +1192,7 @@ this.objects.player = function(name, color){
 	this.name= name|| "fred";
 	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
 	//todo icon:[],
-	this.cash =0;
+	this.cash =100;
 	this.alive=true;
 	this.isAI = false;
 	this.tank = null;
@@ -1222,18 +1262,94 @@ this.screens.endRound  = function(){
 this.screens.endRound.prototype =  new diesel.proto.screen();
 this.screens.endRound = new this.screens.endRound();
 ///
-//	tread.screens.intraRound
+//	tread.screens.buying
 ///
 /*
 shown by the server durring connection.
 */
-this.screens.intraRound  = function(){
-	
+this.screens.buying  = function(){
+	this.timeToShow = 10;
+	this.timer = this.timeToShow;
+
+	this.reset = function(){
+		this.timer = this.timeToShow;
+	}
+
+	this.draw= function(){
+		game.context.effects.clearRect( 0,0, game.width, game.height);
+		game.context.effects.fillStyle= "rgba(0, 0, 0, .75)";
+		game.context.effects.fillRect( 0,0, game.width, game.height);
+		
+
+		// TODO draw the last round stats;
+		game.context.effects.strokeStyle= "#fff";
+		game.context.effects.strokeRect(50,100, game.width -100, game.height - 150);
+		game.context.effects.fillStyle= "#fff";
+		var i=1;
+		for(var stat in game.level.stats){
+			game.context.effects.fillText(stat +" : "+ game.level.stats[stat], 50, 100+25*i);
+			i++;
+		}
+
+		
+		//show the timer
+		game.context.effects.fillStyle= "#fff";
+		game.context.effects.fillText( Math.ceil(this.timer) + " seconds to the next round", 50, 50);
+		game.context.effects.fillText( "Get to buying  stuff if you need it.", 50, 75);
+
+
+	}	
+
+	this.update =function(ticks){
+		this.timer -= ticks;
+
+		if(this.timer <=0){
+			diesel.raiseEvent("screenChange", "buying","server");
+		}
+	}
+	this.readNetMessage =function(gameUpdate){
+		var msg =gameUpdate.message;
+		if(msg){
+			if(msg.buy){
+				
+				for(var i = 0; i < game.players.length; i++){
+					if(game.players[i].name == gameUpdate.player.name){
+
+						var cost = game.weapons[msg.buy].cost;
+						if(game.players[i].cash >= cost){
+
+							console.log(msg.player.name + " bought " + msg.buy);
+
+							//deduct the $$$
+							game.players[i].cash -= cost;
+
+							//add an item to our request
+							if(!game.players[i].weapons[item]){
+								game.players[i].weapons[item] =1;
+							}
+							else{
+								game.players[i].weapons[item]++;
+							}
+						}
+					}
+
+				}
+			}
+
+			//forwarrd the heart beat message.
+			if(msg.heartbeat){
+				game.screens.setup.readNetMessage(gameUpdate);
+			}
+		}
+
+	};
+
+
 
 };
 
-this.screens.intraRound.prototype =  new diesel.proto.screen()
-this.screens.intraRound = new this.screens.intraRound();
+this.screens.buying.prototype =  new diesel.proto.screen()
+this.screens.buying = new this.screens.buying();
 ///
 //	tread.screens.server
 ///
@@ -1254,7 +1370,10 @@ this.screens.server = function(){
 		this.level.drawTerrain(game.context.terrain);
 
 		var msg = new game.messages.gameUpdate();
-		msg.message = {"newLevel":this.level};
+		msg.message = {
+			"newLevel":this.level,
+			"players":game.players
+	};
 		game.ws.send(JSON.stringify(msg));
 
 		console.log("on level screen");
@@ -1262,6 +1381,8 @@ this.screens.server = function(){
 	};
 
 	this.draw= function(){
+
+		game.context.main.fillText("Game Code:"+ game.networkGame.serverId, game.width-100, 25);
 		game.screens.server.level.draw(game.context.main);
 	};
 
@@ -1275,55 +1396,7 @@ this.screens.server = function(){
 			console.log("processing message of type:",msg);
 		}
 
-		//console.log(msg);
-		//is it a join message
-		// if(msg.joined){
-
-		// 	if(this.level &&this.level.effect){
-		// 		var effect = new game.effects.text(msg.joined.name+" joined",
-		// 			 game.fontSize, game.fontSize);
-		// 		this.level.effects.push(effect);
-		// 	}
-		// 	console.log("joined", gameUpdate);
-		// 	game.players.push(msg.joined);
-
-		// 	if(this.level.tanks.length < 2){
-		// 		game.screens.server.reset();
-		// 	}
-			
-
-		// }
-		// if(msg.dropped){
-		// 	//setup an AI to take over.
-		// 	console.log("dropped", msg.dropped);
-
-		// 	var ai = new game.ai.misterStupid();
-
-		// 	for(var i =0 ; i < this.level.tanks.length; i++){
-
-		// 		if(this.level.tanks[i].player == msg.dropped.name){
-
-		// 				diesel.addMixin(this.level.tanks[i],ai);
-		// 				console.log("repalced with an AI");
-						
-		// 		}
-
-		// 	}
-		// 	for(var i =0 ; i < game.players.length; i++){
-
-		// 		if(game.players[i].name == msg.dropped.name){
-
-		// 				diesel.addMixin(game.players[i],ai,true);
-					
-		// 		}
-
-		// 	}
-
-
-		// }
-		if(msg.heartbeat){
-
-		}
+		
 
 
 		//show where they are aiming
@@ -1352,9 +1425,10 @@ this.screens.server = function(){
 	
 		
 			if(msg.fire.player === game.level.tanks[game.level.activePlayer].player
-				&& game.level.effects.length === 0
+				//&& game.level.effects.length === 0
 				&& game.level.tanks[game.level.activePlayer].isActive
-				&& game.level.tanks[game.level.activePlayer].safetyOff){
+				&& game.level.tanks[game.level.activePlayer].safetyOff
+				){
 				//TODO aim
 				//TODO power
 				
@@ -1374,30 +1448,8 @@ this.screens.server = function(){
 				console.log("invalid fire command from ", msg.fire.player, msg.fire);
 			}
 		}
-		// //show the fire effect
-		// if(msg.move){
-		// 	//TODO
-		// 	console.log("move envent");
-		// }	
+	
 
-		
-
-		//ignored messages
-		/*
-		if(msg.newLevel){
-
-		}
-
-		//played is a player was hit
-		if(msg.hit){
-
-		}
-		//change turn
-		if(msg.next){
-
-		}
-
-		*/
 
 
 		
@@ -1420,6 +1472,7 @@ this.screens.setup  = function(){
 	this.countdownTime = 1;
 	this.CountDownRemaining = 0;
 	this.allReady = false;
+	this.addressOfCLient = "http://lbrunjes.github.io/game/tanks/client.html";
 
 	this.draw= function(){
 		var me = diesel.game;
@@ -1480,7 +1533,8 @@ this.screens.setup  = function(){
 			me.context.main.fillText("waiting for players", 25, me.height-50);	
 		}
 		if(me.networkGame){
-			me.context.main.fillText("Game Code:"+ me.networkGame.serverId, 25, me.height-75);	
+			me.context.main.fillText("Game Code:"+ me.networkGame.serverId, 25, me.height-75);
+			me.context.main.fillText(this.addressOfCLient, 25, me.height-100);		
 		}
 
 	};
@@ -1491,7 +1545,7 @@ this.screens.setup  = function(){
 		var readyNow =false;
 
 		//loop though players
-		if(diesel.game.players.length == diesel.game.maxPlayers +1){ //the first player is the server
+		if(diesel.game.players.length >= diesel.game.maxPlayers +1){ //the first player is the server
 			// var ready = true;
 			// for(var i = 0;i < diesel.game.players.length;i++){
 			// 	ready = ready && diesel.game.players[i].ready;
@@ -1794,22 +1848,26 @@ this.weapons = {
 	babyMissile:{
 		start:99,
 		radius:15,
-		cost:0
+		cost:0,
+		name:"Baby Missile"
 	},
 	missile:{
 		start:5,
 		radius:30,
-		cost:50
+		cost:50,
+		name:"Missile"
 	},
 	bigMissile:{
 		start:3,
 		radius:45,
-		cost:100
+		cost:100,
+		name:"Big Missile"
 	},
 	nuke:{
 		start:1,
 		radius:500,
-		cost:500	
+		cost:500,
+		name:"Nuke"	
 	}
 
 };
