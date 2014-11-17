@@ -1,4 +1,4 @@
-// built at Fri 14 Nov 2014 11:26:18 AM EST
+// built at Mon 17 Nov 2014 04:42:37 PM EST
 ///
 //	cast API
 ///
@@ -49,9 +49,11 @@ var tread =function(){
 	this.height=480;
 
 	this.ws = null;
+	this.cast =null;
 
 	this.level = null;
 	this.round =0;
+	this.maxRounds = 9;
 	this.mouseDown=false;
 
 	this.touches=[];
@@ -69,7 +71,7 @@ var tread =function(){
 	this.levelWinnerBonus = 100;
 
 	this.init =function(){
-		
+		console.log("initing");
 		this.width = window.innerWidth;
 		this.height = window.innerHeight;
 		window.scrollMaxX=0;
@@ -80,6 +82,9 @@ var tread =function(){
 		this.ws = new WebSocket(this.messageHost, false);
 
 		this.ws.onopen = this.connections.webSocket.onOpen;
+
+		this.cast = new this.connections.castApi();
+		console.log("done");
 	}
 
 	//called if the diesel startup event happens
@@ -194,9 +199,89 @@ if(!this.connections){
 //	this.connections.castApi
 ///
 
-this.connections.castApi = {
-	states : ["?!?", "!!!", "!?!","$#!%"]
+this.connections.castApi = function(){
+	this.states = ["?!?", "!!!", "!?!","$#!%"];
+	this.cast = window.cast || {};
+	this.protocol = "urn:x-cast:co.housemark.dieseltanks";
 
+	this.castReceiverManager =null;
+	this.castMessageBus = null;
+	this.config = null;
+
+	this.commands = {
+		"setGameParams":function(e){
+			//We need to set somethings
+
+			//# of wins to victory
+
+			//starting cash ?
+
+			//starting items ?
+
+			//sound on/off
+
+			//bg color?
+
+			//fg color?
+
+			//max players..
+
+		}
+	}
+
+	this.init = function(){
+
+		this.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
+    	this.castMessageBus = this.castReceiverManager.getCastMessageBus(this.protocol,
+        cast.receiver.CastMessageBus.MessageType.JSON);
+
+        this.castMessageBus.onMessage = this.onMessage;
+        this.castMessageBus.onSenderConnected = this.onSenderConnected;
+        this.castMessageBus.onSenderDisconnected = this.onSenderDisconnected;
+		this.config = new cast.receiver.CastReceiverManager.Config();
+		this.config.statusText = 'Rumbling!!';
+
+		this.config.maxInactivity = 1000* 60 *5;
+
+        this.castReceiverManager.start(this.config);
+
+
+        console.log("castApi init");
+	}
+
+	this.onMessage = function(e){
+		console.log("castMessage", e);
+
+		if(this.commands[e.command]){
+			this.commands[e.command](e);
+		}
+		else{
+			console.log("invalid command" ,e.command)
+		}
+	};
+	this.onSenderConnected = function(e){
+		 console.log('Cast Sender Connected. #' +
+          this.castReceiverManager.getSenders().length);
+
+	};
+	this.onSenderDisconnected = function(e){
+		 console.log('Cast Sender Disconnected. remaining:' +
+          this.castReceiverManager.getSenders().length);
+
+		 //kill if we lost connections to the client.
+		 if (this.castReceiverManager.getSenders().length == 0 
+		 	&& game.activeScreen == "startup"
+		 	&& game.players.length <=0) {
+	       	console.log("should end here");
+	      }
+
+	};
+
+
+	
+
+
+	this.init();
 };
 ///
 //	this.connections.webSocket
@@ -278,6 +363,7 @@ this.effects.bullet = function(tank){
 	this.isActive =true;
 	this.weapon = tank.weapon;
 	this.type="bullet";
+	this.lastDrew= Math.random()/2;
 
 
 	
@@ -293,18 +379,24 @@ this.effects.bullet = function(tank){
 	};
 
 	this.draw=function(econtext ,context){
-		econtext.save();
-			econtext.translate(this.x,this.y);
-			econtext.rotate(Math.PI/4);
-			econtext.fillStyle = this.color;
-			econtext.fillRect(-1, -1,2,2);
+		if(this.lastDrew > .1){ //draw every tenth of a second or so.
+			this.lastDrew = 0;
+			econtext.save();
+				econtext.translate(this.x,this.y);
+				econtext.rotate(Math.PI/4);
+				econtext.fillStyle = this.color;
+				econtext.fillRect(-1, -1,2,2);
 
-		econtext.restore();
+			econtext.restore();
+		}
+
 		context.fillStyle ="#fff";
 		context.fillRect(this.x-1,this.y-1,3,3)
+
 	
 	}
 	this.update=function(ticks){
+		this.lastDrew+=ticks;
 		if( this.isActive){
 
 			var oldx = this.x, 
@@ -319,11 +411,11 @@ this.effects.bullet = function(tank){
 
 			// if we are going too fast we need to check more 
 			// points than the two we drew at. or bullets go through walls and tanks
-			var minDist = 1, 
+			var minDist = 4, 
 				dx = Math.abs(this.x - oldx),
 				dy = Math.abs(this.y - oldy);
 			if( dx>= minDist || dy>=minDist){
-				for(var i = 0 ; i< dx+dy;i++){
+				for(var i = 0 ; i< dx+dy;i+=minDist){
 					
 					tests.push(diesel.lerp(this.x,oldx,i/(dx+dy)));
 					tests.push(diesel.lerp(this.y,oldy,i/(dx+dy)));
@@ -373,6 +465,7 @@ this.effects.bullet = function(tank){
 	this.init();
 };
 this.effects.bullet.prototype = new this.objects.base();
+
 ///
 //	this.effects.explosion
 ///
@@ -561,7 +654,11 @@ this.events.endLevel = function(evt){
 	//change to the next Level or the buy screen
 	effect.after = function(){
 
-		diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+		if(game.rounds == game.maxRounds){
+			diesel.raiseEvent("screenChange", game.activeScreen, "endRound");
+		}else{
+			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+		}	
 		var msg = new game.messages.gameUpdate();
 		msg.message = {
 			"endLevel":this.level,
@@ -821,7 +918,7 @@ this.mixin.gravity = {
 	"applyGravity":function(ticks){
 		if(this.canFall()){
 			//I know it says up it's cool
-			this.move(ticks, Math.PI, this.downSpeed);
+			this.move(ticks, diesel.directions.up, this.downSpeed);
 
 			if(this.downSpeed < this.terminalVelocity){
 				this.downSpeed += this.gravity*ticks;
@@ -933,6 +1030,7 @@ this.objects.level = function(players){
 	this.stats = {
 
 	};
+	this.pixelCache =null;
 
 
 
@@ -1008,7 +1106,7 @@ this.objects.level = function(players){
 
 		}
 	};
-
+	
 	this.collides =function(x,y){
 		if(x <0 ||y<0||x>this.width){
 			return false;
@@ -1255,7 +1353,45 @@ if(!this.screens){
 shown by the server durring connection.
 */
 this.screens.endRound  = function(){
-	
+	this.timeToShow = 60;
+	this.timer = this.timeToShow;
+
+	this.reset = function(){
+		this.timer = this.timeToShow;
+	}
+
+
+	this.draw =function(){
+		game.context.effects.clearRect( 0,0, game.width, game.height);
+		game.context.effects.fillStyle= "rgba(0, 0, 0, .75)";
+		game.context.effects.fillRect( 0,0, game.width, game.height);
+		
+
+		// TODO draw the last round stats;
+		game.context.effects.strokeStyle= "#fff";
+		game.context.effects.strokeRect(50,100, game.width -100, game.height - 150);
+		game.context.effects.fillStyle= "#fff";
+		var i=1;
+		for(var stat in game.level.stats){
+			game.context.effects.fillText(stat +" : "+ game.level.stats[stat], 50, 100+25*i);
+			i++;
+		}
+		//show the timer
+		game.context.effects.fillStyle= "#fff";
+		game.context.effects.fillText( Math.ceil(this.timer) + " seconds to close", 50, 50);
+		game.context.effects.fillText( "Thanks for playing, GGs", 50, 75);
+
+
+		
+	}
+
+	this.update =function(ticks){
+		this.timer -= ticks;
+
+		if(this.timer <=0 &&game.cast &&game.cast.readyState ==4){
+			window.close();
+		}
+	}
 
 };
 
@@ -1498,13 +1634,13 @@ this.screens.setup  = function(){
 
 		me.context.main.fillStyle= "#fff";
 		me.context.main.fillText("Controller...", 25,100);
-		if(0 ===1 ){
+		if(me.cast.readyState ===1 ){
 			me.context.main.fillStyle= "#0f0";
 		}
 		else{
 			me.context.main.fillStyle= "#f00";
 		}
-		me.context.main.fillText(me.connections.castApi.states[diesel.game.ws.readyState], 300,100);
+		me.context.main.fillText(me.cast.states[me.cast.readyState], 300,100);
 
 
 		//show connected players with color and ready state.
@@ -1618,7 +1754,7 @@ this.sound.system= function(){
 	this.context =  null;
 	this.oscillator= null,
 	this.gain = null;
-	this.enabled = true;
+	this.enabled = false;
 
 
 	this.init = function(){
@@ -1791,7 +1927,7 @@ this.units.tank = function(x,y,player){
 	};
 
 	this.update = function(ticks){
-
+		
 		this.applyGravity(ticks);
 
 

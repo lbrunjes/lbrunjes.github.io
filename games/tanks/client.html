@@ -18,22 +18,39 @@
 	clear:both;
 	
 }
+*{
+	-webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
 
-#setup *,#controls input, #controls label, #controls span{
+#setup *,#controls input, #controls label{
 	float:left;
 	padding:1ex;
 
 
 }
-#setup label,#controls label{
+#controls span{
+	display:inline-block;
+}
+#setup label{
 	clear:left;
 	margin-right:1em;
 	width:10em;
 	text-align:right;
 }
+#controls label{
+	clear:left;
+	margin-right:1em;
+	
+	text-align:right;
+}
 #tank{
-	 height:480px;
+	 height:px;
 	 width:640px;
 	 width:100%;
 	 background:#000;
@@ -61,8 +78,25 @@ background:#f00;
 }
 #items div{
 
-display:inline-block;
+display:block;
 padding:1ex;
+}
+
+#game{
+display:none;
+
+}
+label a{
+	width:50px;
+	margin:0 1em;
+	text-decoration: none
+}
+#fire {
+	margin:3em auto;
+	display:block;
+	float:none!important;
+	clear:both;
+
 }
 </style>
 
@@ -88,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function(){
 		</form>
 	</div>
 	<div id="game">
+		<a href="">back</a>
 		<div id="status">
 		Disconnected
 		</div>
@@ -103,20 +138,36 @@ document.addEventListener("DOMContentLoaded", function(){
 				<button id="nuke" count="0" >Nuke</button>
 			</div>		
 			<form id="gameControls">
-				<label for="angle">angle <span id="angledisplay">0</span></label><input id="angle" name="angle" type="range" min="-90" max="90" style="width:100%"/> 
-				<label for="power">power <span id="powerdisplay">200</span></label><input id="power" name="power" type="range" min="0" max="1000"  style="width:100%"/>
-				<label for="fire">&nbsp;</label><input name="fire"  id="fire" type="submit" value="fire"/>
+				<label for="angle">angle 
+					<a href="#" class="minus">-</a>
+					<span id="angledisplay">0</span>
+					<a href="#" class="plus">+</a>
+					
+				</label>
+				<input id="angle" name="angle" type="range" min="-90" max="90" style="width:100%"/> 
+				<label for="power">power 
+					
+					<a href="#" class="minus">-</a>
+					<span id="powerdisplay">200</span>
+					<a href="#" class="plus">+</a>
+				</label>
+				<input id="power" name="power" type="range" min="0" max="1000"  style="width:100%"/>
+				<div style="clear:both"></div>
+				<input name="fire"  id="fire" type="submit" value="fire"/>
 			</form>
-		</div>
+			<div id="buying">
 
-		<div id="buying">
-			<div id="dollas">$##########</div>
+				<h3>Store</h3>
+				<p>You have: <span id="dollas">$##########</span></p>
 
-			<div id="items">
+				<div id="items">
 				
 			</div>
 
 		</div>
+		</div>
+
+		
 
 	
 	</div>

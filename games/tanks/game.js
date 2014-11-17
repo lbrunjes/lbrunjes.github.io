@@ -1,4 +1,4 @@
-// built at Fri 14 Nov 2014 11:26:18 AM EST
+// built at Mon 17 Nov 2014 04:42:37 PM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -124,7 +124,7 @@ this.mixin.gravity = {
 	"applyGravity":function(ticks){
 		if(this.canFall()){
 			//I know it says up it's cool
-			this.move(ticks, Math.PI, this.downSpeed);
+			this.move(ticks, diesel.directions.up, this.downSpeed);
 
 			if(this.downSpeed < this.terminalVelocity){
 				this.downSpeed += this.gravity*ticks;
@@ -334,6 +334,7 @@ this.objects.level = function(players){
 	this.stats = {
 
 	};
+	this.pixelCache =null;
 
 
 
@@ -409,7 +410,7 @@ this.objects.level = function(players){
 
 		}
 	};
-
+	
 	this.collides =function(x,y){
 		if(x <0 ||y<0||x>this.width){
 			return false;
@@ -609,6 +610,7 @@ this.effects.bullet = function(tank){
 	this.isActive =true;
 	this.weapon = tank.weapon;
 	this.type="bullet";
+	this.lastDrew= Math.random()/2;
 
 
 	
@@ -624,18 +626,24 @@ this.effects.bullet = function(tank){
 	};
 
 	this.draw=function(econtext ,context){
-		econtext.save();
-			econtext.translate(this.x,this.y);
-			econtext.rotate(Math.PI/4);
-			econtext.fillStyle = this.color;
-			econtext.fillRect(-1, -1,2,2);
+		if(this.lastDrew > .1){ //draw every tenth of a second or so.
+			this.lastDrew = 0;
+			econtext.save();
+				econtext.translate(this.x,this.y);
+				econtext.rotate(Math.PI/4);
+				econtext.fillStyle = this.color;
+				econtext.fillRect(-1, -1,2,2);
 
-		econtext.restore();
+			econtext.restore();
+		}
+
 		context.fillStyle ="#fff";
 		context.fillRect(this.x-1,this.y-1,3,3)
+
 	
 	}
 	this.update=function(ticks){
+		this.lastDrew+=ticks;
 		if( this.isActive){
 
 			var oldx = this.x, 
@@ -650,11 +658,11 @@ this.effects.bullet = function(tank){
 
 			// if we are going too fast we need to check more 
 			// points than the two we drew at. or bullets go through walls and tanks
-			var minDist = 1, 
+			var minDist = 4, 
 				dx = Math.abs(this.x - oldx),
 				dy = Math.abs(this.y - oldy);
 			if( dx>= minDist || dy>=minDist){
-				for(var i = 0 ; i< dx+dy;i++){
+				for(var i = 0 ; i< dx+dy;i+=minDist){
 					
 					tests.push(diesel.lerp(this.x,oldx,i/(dx+dy)));
 					tests.push(diesel.lerp(this.y,oldy,i/(dx+dy)));
@@ -704,6 +712,7 @@ this.effects.bullet = function(tank){
 	this.init();
 };
 this.effects.bullet.prototype = new this.objects.base();
+
 ///
 // this.effects.text.js
 ///
@@ -884,7 +893,11 @@ this.events.endLevel = function(evt){
 	//change to the next Level or the buy screen
 	effect.after = function(){
 
-		diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+		if(game.rounds == game.maxRounds){
+			diesel.raiseEvent("screenChange", game.activeScreen, "endRound");
+		}else{
+			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+		}	
 		var msg = new game.messages.gameUpdate();
 		msg.message = {
 			"endLevel":this.level,
@@ -1203,6 +1216,11 @@ this.messages.error = function(){
 	this.type= "error";
 	this.process = function(data){
 		console.log("ERROR",data);
+		if(diesel.game.screens && 
+			diesel.game.screens[diesel.game.activeScreen] &&
+			diesel.game.screens[diesel.game.activeScreen].netError ){
+			diesel.game.screens[diesel.game.activeScreen].netError(data)
+		}
 		alert(data.message);
 	};
 
@@ -2074,13 +2092,13 @@ this.screens.setup  = function(){
 
 		me.context.main.fillStyle= "#fff";
 		me.context.main.fillText("Controller...", 25,100);
-		if(0 ===1 ){
+		if(me.cast.readyState ===1 ){
 			me.context.main.fillStyle= "#0f0";
 		}
 		else{
 			me.context.main.fillStyle= "#f00";
 		}
-		me.context.main.fillText(me.connections.castApi.states[diesel.game.ws.readyState], 300,100);
+		me.context.main.fillText(me.cast.states[me.cast.readyState], 300,100);
 
 
 		//show connected players with color and ready state.
@@ -2378,7 +2396,7 @@ this.units.tank = function(x,y,player){
 	};
 
 	this.update = function(ticks){
-
+		
 		this.applyGravity(ticks);
 
 

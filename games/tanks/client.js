@@ -1,4 +1,4 @@
-// built at Fri 14 Nov 2014 11:26:18 AM EST
+// built at Mon 17 Nov 2014 04:42:37 PM EST
 ///
 //	index.js
 ///
@@ -8,7 +8,7 @@ var client= function(host){
 	this.player = null;
 	this.level=null;
 	this.width =640;
-	this.height =480;
+	this.height =240;
 
 
 	this.context={"tank":true};
@@ -44,10 +44,12 @@ var client= function(host){
 						for(var i = 0 ;i < msg.message.newLevel.tanks.length;i++){
 							if(msg.message.newLevel.tanks[i].player=== client.player.name){
 								//set the local clien to match
-								$("input[name=angle]").val(diesel.degrees(msg.message.newLevel.tanks[i].aim -Math.PI));
-								$("input[name=power]").val(msg.message.newLevel.tanks[i].power);
+								$("input[name=angle]").val(diesel.degrees(msg.message.newLevel.tanks[i].aim -Math.PI).change());
+								$("input[name=power]").val(msg.message.newLevel.tanks[i].power).change();;
+								$("#babyMissile").click();
 								client.draw();
-
+								$("#gameControls").show();
+								$("#buying").hide();
 
 
 							}
@@ -55,6 +57,11 @@ var client= function(host){
 
 						}
 					}
+					if(msg.message.endLevel){
+						$("#gameControls").hide();
+						$("#buying").show();
+					}
+
 					if(msg.message.players){
 						//TODO check my inventory
 						for(var i = 0 ;i < msg.message.players.length;i++){
@@ -67,6 +74,13 @@ var client= function(host){
 					}
 				}
 
+			},
+			"netError":function(data){
+				if(data.message =="no such game"){
+					$("#game").hide();
+					$("#setup").show();
+				}
+		
 			}
 		}
 	};
@@ -96,11 +110,12 @@ var client= function(host){
 
 		
 		
-		
 	};
 	this.startup = function(){
 		console.log("startup")
 		this.addItemsToStore();
+
+
 	}
 
 
@@ -110,16 +125,17 @@ var client= function(host){
 
  		client.context.tank.save();
  		client.context.tank.translate(client.width/2, client.height/3*2);
- 		client.context.tank.scale(2,2);
+ 		client.context.tank.scale(8,8);
 
  		this.tank.draw(diesel.game.context.tank, true);
  		client.context.tank.restore();
 
  		//draw the aim, power, and health
  		client.context.tank.fillStyle = "#fff";
- 		client.context.tank.fillText(Math.round(diesel.degrees(client.tank.aim)), game.width-75,25);
- 		client.context.tank.fillText(client.tank.power, game.width-75,50);
- 		client.context.tank.fillText(client.tank.health, game.width-75,75);
+ 		client.context.tank.fillText("AIM:"+Math.round(diesel.degrees(client.tank.aim)), diesel.game.width-75,25);
+ 		client.context.tank.fillText("POW:"+client.tank.power, diesel.game.width-75,50);
+ 		client.context.tank.fillText("HLT:"+client.tank.health, diesel.game.width-75,75);
+ 		client.context.tank.fillText("$$$:"+client.player.cash, diesel.game.width-150,200);
 
  		//draw how much of each item you have?
  		var x =1;
@@ -131,7 +147,9 @@ var client= function(host){
  		}
 
 
-		document.getElementById("status").innerHTML = this.network.states[this.connection.readyState];
+		document.getElementById("status").innerHTML = 
+		this.player.name+
+		" "+this.network.states[this.connection.readyState];
 		document.getElementById("dollas").innerHTML = "$"+this.player.cash;
 	};
 
@@ -339,6 +357,11 @@ this.messages.error = function(){
 	this.type= "error";
 	this.process = function(data){
 		console.log("ERROR",data);
+		if(diesel.game.screens && 
+			diesel.game.screens[diesel.game.activeScreen] &&
+			diesel.game.screens[diesel.game.activeScreen].netError ){
+			diesel.game.screens[diesel.game.activeScreen].netError(data)
+		}
 		alert(data.message);
 	};
 
@@ -417,7 +440,7 @@ this.mixin.gravity = {
 	"applyGravity":function(ticks){
 		if(this.canFall()){
 			//I know it says up it's cool
-			this.move(ticks, Math.PI, this.downSpeed);
+			this.move(ticks, diesel.directions.up, this.downSpeed);
 
 			if(this.downSpeed < this.terminalVelocity){
 				this.downSpeed += this.gravity*ticks;
@@ -611,7 +634,7 @@ this.units.tank = function(x,y,player){
 	};
 
 	this.update = function(ticks){
-
+		
 		this.applyGravity(ticks);
 
 
@@ -735,11 +758,12 @@ $(document).ready(function(){
 			client.connection.send(msg);
 
 			//hide setup &show game
-			//$("#setup").hide();
+			$("#setup").hide();
 			client.draw();
-			//$("#game").show();
+			$("#game").show();
+			$("#status").attr("style", "color:"+client.player.color);
 
-			//TODO decrea count of the item you used.
+
 
 		}	
 		
@@ -805,7 +829,6 @@ $(document).ready(function(){
 	});
 
 	$("#weapons button").click(function(e){
-		console.log("click");
 		$("#weapons button").removeClass("selected");
 
 		var $this = $(this), text = $this.attr("id");
@@ -821,6 +844,20 @@ $(document).ready(function(){
 			
 		}
 
+	});
+
+	$("a.plus").click(function(e){
+	
+		var inpt = $("input[name="+$(this).closest("label").attr("for")+"]");
+		inpt.val(parseInt(inpt.val())+1);
+		inpt.change();
+		e.preventDefault();
+	});
+	$("a.minus").click(function(e){
+		var inpt = $("input[name="+$(this).closest("label").attr("for")+"]");
+		inpt.val(parseInt(inpt.val())-1);
+		inpt.change();
+		e.preventDefault();
 	});
 	
 });
