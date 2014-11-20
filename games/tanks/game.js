@@ -1,4 +1,4 @@
-// built at Mon 17 Nov 2014 04:42:37 PM EST
+// built at Thu 20 Nov 2014 11:04:55 AM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -205,6 +205,7 @@ this.mixin.controlable = {
 		this.isActive = false;
 		this.safetyOff = false;
 		diesel.raiseEvent("fire", this);
+		this.shotsTaken++;
 		
 	}
 };
@@ -540,6 +541,11 @@ this.objects.level = function(players){
 			}
 			else{
 				this.stats.draw = true;
+			}
+
+			for(var i = 0 ;i < this.tanks.length;i++){
+				this.stats[this.tanks[i].player+ " Accuracy: "] =
+				 Math.round(this.tanks[i].hits / this.tanks[i].shotsTaken*100) + "%";
 			}
 
 			diesel.raiseEvent("endLevel", this.tanks, next);
@@ -893,7 +899,7 @@ this.events.endLevel = function(evt){
 	//change to the next Level or the buy screen
 	effect.after = function(){
 
-		if(game.rounds == game.maxRounds){
+		if(game.round == game.maxRounds){
 			diesel.raiseEvent("screenChange", game.activeScreen, "endRound");
 		}else{
 			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
@@ -925,9 +931,24 @@ this.events.explosion = function(evt){
 	
 	var explosion = new game.effects.explosion(bullet.x, bullet.y,
 	 diesel.game.weapons[bullet.weapon]);
+
 	game.sound.instance.startTone(222,300);
 				
 	game.screens.server.level.effects.push(explosion);
+
+	var numHit =0,tnk;
+	for(var i = 0; i < game.level.tanks.length; i++){
+		if(explosion.distance(game.level.tanks[i].x,game.level.tanks[i].y) <= explosion.radius){
+			numHit++;
+		}
+		if(game.activePlayer =game.level.tanks[i].player){
+			tnk = game.level.tanks[i];
+		}
+	}
+
+	if(tnk){
+		tnk.hits+= numHit;
+	}
 	
 
 };
@@ -1825,8 +1846,11 @@ this.screens.server = function(){
 
 	this.draw= function(){
 
-		game.context.main.fillText("Game Code:"+ game.networkGame.serverId, game.width-100, 25);
 		game.screens.server.level.draw(game.context.main);
+		game.context.main.fillStyle="#fff";
+		game.context.main.fillText("#"+ game.networkGame.serverId, diesel.game.width-100, 25);
+		game.context.main.fillText(game.round+"/"+ game.maxRounds, diesel.game.width-75, 50);
+		
 	};
 
 	this.update =function(ticks){
@@ -1885,7 +1909,7 @@ this.screens.server = function(){
 				game.level.tanks[game.level.activePlayer].weapon = msg.fire.weapon|| "babyMissile";
 				
 				game.level.tanks[game.level.activePlayer].fire();
-				game.sound.instance.startTone(game.level.tanks[game.level.activePlayer].power/game.level.tanks[game.level.activePlayer].aim,100);
+				game.sound.instance.startTone(game.level.tanks[game.level.activePlayer].power/game.level.tanks[game.level.activePlayer].aim,50);
 			}
 			else{
 				console.log("invalid fire command from ", msg.fire.player, msg.fire);
@@ -2066,7 +2090,7 @@ this.screens.setup  = function(){
 	this.countdownTime = 1;
 	this.CountDownRemaining = 0;
 	this.allReady = false;
-	this.addressOfCLient = "http://lbrunjes.github.io/game/tanks/client.html";
+	this.addressOfCLient = "lbrunjes.github.io/game/tanks";
 
 	this.draw= function(){
 		var me = diesel.game;
@@ -2074,37 +2098,42 @@ this.screens.setup  = function(){
 		me.context.main.fillRect(0,0, me.width, me.height);
 
 		me.context.main.fillStyle= "#fff";
-		me.context.main.fillText("hang on there buddy...", 25,25);
+		me.context.main.fillText("Hello there...", 25,25);
 
 		
 		
 		me.context.main.fillStyle= "#fff";
-		me.context.main.fillText("Connecting...", 25,75);
-		if(me.ws.readyState ===1 ){
-			me.context.main.fillStyle= "#0f0";
-		}
-		else{
-			me.context.main.fillStyle= "#f00";
-		}
-		me.context.main.fillText(me.connections.webSocket.states[diesel.game.ws.readyState] || "?!", 300,75);
+		if(diesel.debug){
+			me.context.main.fillText("web Socket...", 25,75);
+			if(me.ws.readyState ===1 ){
+				me.context.main.fillStyle= "#0f0";
+			}
+			else{
+				me.context.main.fillStyle= "#f00";
+			}
+			me.context.main.fillText(me.connections.webSocket.states[diesel.game.ws.readyState] || "?!", 300,75);
 
-		
+			
 
-		me.context.main.fillStyle= "#fff";
-		me.context.main.fillText("Controller...", 25,100);
-		if(me.cast.readyState ===1 ){
-			me.context.main.fillStyle= "#0f0";
+			me.context.main.fillStyle= "#fff";
+			me.context.main.fillText("Cast API...", 25,100);
+			if(me.cast.readyState ===1 ){
+				me.context.main.fillStyle= "#0f0";
+			}
+			else{
+				me.context.main.fillStyle= "#f00";
+			}
+			me.context.main.fillText(me.cast.states[me.cast.readyState], 300,100);
 		}
-		else{
-			me.context.main.fillStyle= "#f00";
+		else
+		{
+			me.context.main.fillText("Welcome to Diesel Tanks", 25,75);
 		}
-		me.context.main.fillText(me.cast.states[me.cast.readyState], 300,100);
-
 
 		//show connected players with color and ready state.
 		me.context.main.fillStyle = "#fff";
 		//server is not a player thus all the ones
-		me.context.main.fillText("Connected Players ["+Math.max(me.players.length -1,0)+"/"+me.maxPlayers+"]" , 25,150);
+		me.context.main.fillText("Connected Players ("+Math.max(me.players.length -1,0)+"/"+me.maxPlayers+")" , 25,150);
 
 		for(var i = 1 ; i<me.players.length;i++){
 			me.context.main.fillStyle = "#fff";
@@ -2124,11 +2153,11 @@ this.screens.setup  = function(){
 			me.context.main.fillText("starting in "+Math.ceil(this.CountDownRemaining), 25, me.height-50);
 		}
 		else{
-			me.context.main.fillText("waiting for players", 25, me.height-50);	
+			me.context.main.fillText("Waiting for players", 25, me.height-50);	
 		}
 		if(me.networkGame){
-			me.context.main.fillText("Game Code:"+ me.networkGame.serverId, 25, me.height-75);
-			me.context.main.fillText(this.addressOfCLient, 25, me.height-100);		
+			me.context.main.fillText("Game Code:"+ me.networkGame.serverId, 25, me.height-85);
+			me.context.main.fillText("Go here to play: "+this.addressOfCLient, 25, me.height-125);		
 		}
 
 	};
@@ -2310,7 +2339,9 @@ this.units.tank = function(x,y,player){
 	this.isPlayer = true;
 	this.isActive = false;
 	this.safetyOff = false;
-	this.weapon = "babyMissile"
+	this.weapon = "babyMissile";
+	this.shotsTaken = 0;
+	this.hits =0;
 
 
 	this.init = function(player){

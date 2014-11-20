@@ -1,4 +1,4 @@
-// built at Mon 17 Nov 2014 04:42:37 PM EST
+// built at Thu 20 Nov 2014 11:04:55 AM EST
 ///
 //	index.js
 ///
@@ -113,9 +113,6 @@ var client= function(host){
 	};
 	this.startup = function(){
 		console.log("startup")
-		this.addItemsToStore();
-
-
 	}
 
 
@@ -147,61 +144,13 @@ var client= function(host){
  		}
 
 
-		document.getElementById("status").innerHTML = 
+		$("#status").html(
 		this.player.name+
-		" "+this.network.states[this.connection.readyState];
-		document.getElementById("dollas").innerHTML = "$"+this.player.cash;
+		" "+this.network.states[this.connection.readyState]);
+		$("#dollas").html( "$"+this.player.cash);;
 	};
 
-	this.addItemsToStore = function(){
-
-		var items = "";
-
-		for(var wep in client.weapons){
-			items += 
-			'<div class="item" item="'+wep+'" cost="'+client.weapons[wep].cost+
-			'"><a href="#">'+client.weapons[wep].name +'</a> $'+
-			client.weapons[wep].cost+'</div>';
-
-		}
-
-
-		document.getElementById("items").innerHTML = items;
-
-		$("div.item a").click(function(e){
-		console.log("xx");
-		e.preventDefault();
-		//get the item details
-		var item = $(this).closest("div.item").attr("item"),
-		cost = client.weapons[item].cost;
-
-		// do we have the $$
-		if(client.player.cash >= cost){
-
-			//deduct the $$$
-			client.player.cash -= cost;
-
-			//add an item to our request
-			if(!client.player.weapons[item]){
-				client.player.weapons[item] =1;
-			}
-			else{
-				client.player.weapons[item]++;
-			}
-
-			//send the request.
-			var msg = new client.messages.gameUpdate();
-			msg.message = {"buy":item};
-
-			client.draw();
-		}
-		else{
-			alert("You ain't got that much cash");
-		}
-
-	});
-
-	}
+	
 
 
 
@@ -548,7 +497,9 @@ this.units.tank = function(x,y,player){
 	this.isPlayer = true;
 	this.isActive = false;
 	this.safetyOff = false;
-	this.weapon = "babyMissile"
+	this.weapon = "babyMissile";
+	this.shotsTaken = 0;
+	this.hits =0;
 
 
 	this.init = function(player){
@@ -754,7 +705,8 @@ $(document).ready(function(){
 		if(code.length>0){
 
 			//connect
-			var msg= new client.messages.joinGame($("input[name=game]").val(),client.player);
+			var msg= new client.messages.joinGame($("input[name=game]").val().toLowerCase(),
+				client.player);
 			client.connection.send(msg);
 
 			//hide setup &show game
@@ -859,6 +811,56 @@ $(document).ready(function(){
 		inpt.change();
 		e.preventDefault();
 	});
+
+
+	//add items
+	var items = "";
+
+	for(var wep in client.weapons){
+		items += 
+		'<div class="item" item="'+wep+'" cost="'+client.weapons[wep].cost+
+		'"><a href="#">'+client.weapons[wep].name +'</a> $'+
+		client.weapons[wep].cost+'</div>';
+
+	}
+
+
+	$("#items").html(items);
+
+	$("div.item a").click(function(e){
+		console.log("xx");
+		e.preventDefault();
+		//get the item details
+		var item = $(this).closest("div.item").attr("item"),
+		cost = client.weapons[item].cost;
+
+		// do we have the $$
+		if(client.player.cash >= cost){
+
+			//deduct the $$$
+			client.player.cash -= cost;
+
+			//add an item to our request
+			if(!client.player.weapons[item]){
+				client.player.weapons[item] =1;
+			}
+			else{
+				client.player.weapons[item]++;
+			}
+
+			//send the request.
+			var msg = new client.messages.gameUpdate();
+			msg.message = {"buy":item};
+
+			client.draw();
+		}
+		else{
+			alert("You ain't got that much cash");
+		}
+
+	});
+
+	
 	
 });
 
