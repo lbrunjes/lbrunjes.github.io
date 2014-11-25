@@ -1,4 +1,4 @@
-// built at Tue Nov 25 11:18:06 2014
+// built at Tue 25 Nov 2014 01:53:16 PM EST
 ///
 //	index.js
 ///
@@ -13,7 +13,7 @@ var client= function(host){
 
 	this.context={"tank":true};
 	this.connection = null
-	this.messageHost = host || "ws://127.0.0.1:9000" ||"ws://housemark.co:9000";
+	this.messageHost = host ||"ws://housemark.co:9000";
 
 	this.screens = {
 		"webclient":{

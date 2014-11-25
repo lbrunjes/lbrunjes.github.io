@@ -1,24 +1,20 @@
-// built at Mon Nov 24 09:30:03 2014
-///
-//	cast API
-///
-
-
+// built at Tue 25 Nov 2014 01:53:16 PM EST
 /*
-the cast object is intended as a mixin for use versus teh main game 
-such that we can use the main lib on the clients and the server stuff
- ends up on here.
-*/
+	DIESEL TANKS
+	a simple tank game in html5 
+	Built using diesel.js
+	2014 Lee Brunjes - lee.brunjes@gmail.com
 
+*/
 var TANKS_APP_ID="1DC73FAD";
 var TANKS_APP_NS="co.housemark.tanks";
 
+
 if(!diesel){
-	console.log("No Diesel, treads cannot possibly start");
+	alert("diesel tanks can't start wth no engine");
 }
 
-
-var tread =function(){
+var gameInstance = function(isServer){
 
 	this.directions={
 		up: Math.PI,
@@ -37,10 +33,11 @@ var tread =function(){
 	this.fontSize = 32;
 
 	// properties
-	this.isServer =true;
-	this.networkGame = null;
-	this.messageHost = "ws://housemark.co:9000";
-		
+	this.isServer = isServer||false;
+	this.networkGame = false;
+	this.messageHost = "ws:\\housemark.co:9000";
+
+	
 	this.players =[];
 	this.maxPlayers =2;
 	this.localPlayer = null;
@@ -49,850 +46,64 @@ var tread =function(){
 	this.height=480;
 
 	this.ws = null;
-	this.cast =null;
 
 	this.level = null;
 	this.round =0;
-	this.maxRounds = 3;
 	this.mouseDown=false;
 
 	this.touches=[];
 	this.x;
 	this.y;
 
-	this.fontSize= 32;
-	this.font ="monospace";
 
-	
-	this.activeScreen="setup";
 
-	
-	this.everyLevelAddCash = 50;
-	this.levelWinnerBonus = 100;
-
-	this.init =function(){
-		console.log("initing");
+	this.init = function(){
+		//at this point we set variables 
+		//our object has not fully loaded yet
+		diesel.fpsLimit =30;
+		diesel.pauseOnBlur =false;
 		this.width = window.innerWidth;
 		this.height = window.innerHeight;
 		window.scrollMaxX=0;
 		window.scrollMaxY=0;
 		window.scrollbars.visible = false;
-				
+		this.fontSize =32;
+		
+
+	}
+
+	this.startup = function(){
+		console.log("game startup");
+
+		var body = document.getElementsByTagName("body")[0].getBoundingClientRect(),
+		    el = document.getElementById(this.container).getBoundingClientRect();
+		this.y = el.top - body.top;
+		this.x = el.left - body.left;
+
+		var _player = diesel.load("player");
+		if(_player){
+			this.localPlayer = new game.objects.player(_player.name, _player.color);
+		}
+		else{
+			this.localPlayer = new game.objects.player();
+		}
+	
+		diesel.registerKey("space",32);
+
 		
 		this.ws = new WebSocket(this.messageHost, false);
-
-		this.ws.onopen = this.connections.webSocket.onOpen;
-
-		this.cast = new this.connections.castApi();
-		console.log("done");
-	}
-
-	//called if the diesel startup event happens
-	this.startup = function(e){
+		this.ws.onopen =function(){
+			console.log("connected");
+			game.ws.onmessage = game.events.routeMessage;
+			game.ws.onerror = function(data){console.log("network error:", data);};
 		
-		this.sound.instance = new this.sound.system();
-		//do not allow the server app to stop even if blurred
-		diesel.pauseOnBlur =false;
-		diesel.shouldLoop= true;
-		
-
-		
-		
-
-
-		//for now we only care about loading and compilation later we will get to drawing things.
-	}
-
-
-///
-//	this.objects
-///
-
-if(!this.objects){
-	this.objects={};
-}
-
-this.objects.base = function(){
-
-
-};
-this.objects.base.prototype = new diesel.proto.objectBase();
-
-
-
-///
-// this.ai
-///
-
-if(!this.ai){
-	this.ai = {};
-}
-
-
-this.ai.base = function(){
-	
-	this.chooseTarget=function(){
-
-	};
-	
-	this.selectWeapon=function(){
-	
-	};
-	
-	this.aim=function(){
-		console.log("AI not aiming, code issues");
-	};
-	
-	this.fire=function(){
-		this.isActive = false;
-		this.safetyOff = false;
-		diesel.raiseEvent("fire", this);
-	};
-
-	this.update =function(){
-		console.log("AI not thinking, code issues");
-	}
-
-};
-///
-//	this.ai.misterStupid
-///
-
-this.ai.misterStupid = function(){
-	this.name ="AI #"+Math.round(Math.random() *100000).toString(16);
-	this.isAI ="misterStupid";
-	this.shouldOverride = true;
-	this.isPlayer =false;
-		
-	this.update = function(ticks){
-		
-		if(this.canFall && this.canFall()){
-			this.applyGravity();
-			//TODO calculate damage
-		}
-		else{
-
-			if(this.isActive){
-				//mister stupoid picks random number and adds it to power
-				this.power = Math.random() * this.maxPower;
-
-				//mister stupid takes a rtanomd number and adds it to aim
-				this.aim = diesel.clamp( this.aim + Math.random() - .5, this.directions.left, this.directions.right);
-
-				//mister stupid shoots;
-				this.fire();
-			}
-		}
-
-	}
-
-};
-this.ai.misterStupid.prototype = this.ai.base();
-///
-//	tread.connections
-///
-
-if(!this.connections){
-	this.connections = {};
-}
-///
-//	this.connections.castApi
-///
-
-this.connections.castApi = function(){
-	this.states = ["?!?", "!!!", "!?!","$#!%"];
-	this.cast = window.cast || {};
-	this.protocol = "urn:x-cast:co.housemark.dieseltanks";
-
-	this.castReceiverManager =null;
-	this.castMessageBus = null;
-	this.config = null;
-
-	this.commands = {
-		"setGameParams":function(e){
-			//We need to set somethings
-
-			//# of wins to victory
-
-			//starting cash ?
-
-			//starting items ?
-
-			//sound on/off
-
-			//bg color?
-
-			//fg color?
-
-			//max players..
-
-		}
-	}
-
-	this.init = function(){
-
-		this.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
-    	this.castMessageBus = this.castReceiverManager.getCastMessageBus(this.protocol,
-        cast.receiver.CastMessageBus.MessageType.JSON);
-
-        this.castMessageBus.onMessage = this.onMessage;
-        this.castMessageBus.onSenderConnected = this.onSenderConnected;
-        this.castMessageBus.onSenderDisconnected = this.onSenderDisconnected;
-		this.config = new cast.receiver.CastReceiverManager.Config();
-		this.config.statusText = 'Rumbling!!';
-
-		this.config.maxInactivity = 1000* 60 *5;
-
-        this.castReceiverManager.start(this.config);
-
-
-        console.log("castApi init");
-	}
-
-	this.onMessage = function(e){
-		console.log("castMessage", e);
-
-		if(this.commands[e.command]){
-			this.commands[e.command](e);
-		}
-		else{
-			console.log("invalid command" ,e.command)
-		}
-	};
-	this.onSenderConnected = function(e){
-		 console.log('Cast Sender Connected. #' +
-          this.castReceiverManager.getSenders().length);
-
-	};
-	this.onSenderDisconnected = function(e){
-		 console.log('Cast Sender Disconnected. remaining:' +
-          this.castReceiverManager.getSenders().length);
-
-		 //kill if we lost connections to the client.
-		 if (this.castReceiverManager.getSenders().length == 0 
-		 	&& game.activeScreen == "startup"
-		 	&& game.players.length <=0) {
-	       	console.log("should end here");
-	      }
-
-	};
-
-
-	
-
-
-	this.init();
-};
-///
-//	this.connections.webSocket
-///
-this.connections.webSocket = {
-	states : ["CONNECTING", "Connected", "CLOSING","CLOSED"],
-	onOpen :function(){
-		console.log("connected to websocket host", diesel.game.messageHost);
-		diesel.game.ws.onmessage = diesel.game.connections.webSocket.routeMessage;
-		diesel.game.ws.onerror = diesel.game.connections.webSocket.onError;
-		diesel.game.ws.onclose = diesel.game.connections.webSocket.onClose;
-
-		var gameid = diesel.url.args["gameid"]|| "unknown";
-		console.log("creating game", gameid)
-		
-		diesel.game.ws.send(new diesel.game.messages.createGame(gameid));
-	},
-	onError:function(data){
-
-		console.log("network error:", data);
-	},
-	onClose :function(){
-		
-		console.log("network error:", data);
-		
-	},
-	routeMessage:function(MessageEvent){
-	var text = MessageEvent.data;
-	if(diesel.debug){
-		console.log("ws recieved:",text, MessageEvent);
-	}	
-	var data;
-	try{
-		data= JSON.parse(text);
-		if(diesel.game.messages[data.type]){
-
-			var msg = new diesel.game.messages[data.type]();
-			if(msg.process){
-				msg.process(data);
-			}
-			else{
-				console.log("unprocessable message", msg);
-			}
-
-		}
-		else{
-			console.log("unknown event", data);
-		}
-	}
-	catch(ex){
-		console.log("error parsing message:",ex , data);
-		diesel.shouldLoop = false;
-	}
-
-}
-
-
-};///
-//	this.effects
-///
-
-if(!this.effects){
-	this.effects = {};
-
-}///
-// this.effects.bullet;
-///
-
-
-this.effects.bullet = function(tank){
-
-	this.x = tank.x + Math.sin(tank.aim) *tank.w ,
-	this.y = tank.y + tank.h/2 + Math.cos(tank.aim) *tank.w;
-	this.w = 3;
-	this.h = 3;
-	this.color = tank.color;
-	this.angle = tank.aim + Math.PI;
-	this.power = tank.power;
-	this.isActive =true;
-	this.weapon = tank.weapon;
-	this.type="bullet";
-	this.lastDrew= Math.random()/2;
-
-
-	
-	this.init = function(){
-		diesel.addMixin(this, diesel.game.mixin.gravity);
-
-		//remove a bullet from teh players inventroy for shooting.
-		for(var i = 0 ;i < diesel.game.players.length;i++){
-			if(diesel.game.players[i].name == tank.player){
-				diesel.game.players[i].weapons[tank.weapon]--;
-			}
-		}
-	};
-
-	this.draw=function(econtext ,context){
-		if(this.lastDrew > .1){ //draw every tenth of a second or so.
-			this.lastDrew = 0;
-			econtext.save();
-				econtext.translate(this.x,this.y);
-				econtext.rotate(Math.PI/4);
-				econtext.fillStyle = this.color;
-				econtext.fillRect(-1, -1,2,2);
-
-			econtext.restore();
-		}
-
-		context.fillStyle ="#fff";
-		context.fillRect(this.x-1,this.y-1,3,3)
-
-	
-	}
-	this.update=function(ticks){
-		this.lastDrew+=ticks;
-		if( this.isActive){
-
-			var oldx = this.x, 
-			oldy=this.y,
-			_x,
-			_y;
-			
-			this.applyGravity(ticks);
-			this.move(ticks, this.angle, this.power);
-
-			var tests =[this.x,this.y];
-
-			// if we are going too fast we need to check more 
-			// points than the two we drew at. or bullets go through walls and tanks
-			var minDist = 4, 
-				dx = Math.abs(this.x - oldx),
-				dy = Math.abs(this.y - oldy);
-			if( dx>= minDist || dy>=minDist){
-				for(var i = 0 ; i< dx+dy;i+=minDist){
-					
-					tests.push(diesel.lerp(this.x,oldx,i/(dx+dy)));
-					tests.push(diesel.lerp(this.y,oldy,i/(dx+dy)));
-				}
-			}
-
-
-			
-			for(var i = tests.length-2 ; i >=0; i-=2){
-				_x = tests[i];
-				_y = tests[i+1];
-
-				//did we hit something?
-				if(game.screens.server.level.collides(_x, _y)){
-					//trigger an explosion.
-					this.isActive= false;
-					this.x= _x, this.y=_y;
-					diesel.raiseEvent("explosion", this);
-					
-					break;
-					
-				}
-				else{
-					//is the bullet still in the screen or above it?
-					if(_x < 0 || 
-						_x > game.width || 
-						_y > game.height){
-						//trigger an explosion.
-						this.isActive= false;
-						
-						diesel.raiseEvent("miss", this);
-						break;
-					}
-				}
-			}
-			
-		}	
-
-	};
-	
-	//bullets should always fall;
-	this.canFall=function(){
-		return true;
-	};
-	
-
-	this.init();
-};
-this.effects.bullet.prototype = new this.objects.base();
-
-///
-//	this.effects.explosion
-///
-
-this.effects.explosion = function(x,y,weapon){
-
-	this.x = x;
-	this.y = y;
-	this.radius = 15;
-	this.radiusNow= 1;
-	this.expand = true;
-	this.shade = 128;
-	this.speedModifier =50;
-	this.isActive =true;
-	this.damage = 600;
-	this.type="explosion";
-
-	this.init = function(weapon){
-		
-		if(weapon){
-			
-			this.radius = weapon.radius||this.radius;
-		}
-	}
-	
-	this.draw = function(eContext, context){
-		if(this.isActive){
-			context.save();
-				context.fillStyle="rgba("+Math.round(this.shade)+", 0,0, 1)";
-				context.beginPath();
-				context.arc(this.x,this.y, this.radiusNow, 0, Math.PI *2);
-				context.closePath();
-				context.fill();
-			context.restore();
-			//draw onthe terrain as well.
-			
-			game.context.terrain.save();
-				
-				game.context.terrain.fillStyle= game.level.backgroundColor;
-				game.context.terrain.beginPath();
-				game.context.terrain.arc(this.x,this.y, this.radiusNow, 0, Math.PI *2);
-				game.context.terrain.closePath();
-				game.context.terrain.fill();
-				
-			game.context.terrain.restore();
-
-			//flag tghe terrain data as dirty
-			game.level.terrainUpdated = true;
-		}
-
-	};
-
-	this.update =function(ticks){
-		this.shade = (this.shade + 1)%256;
-		
-		if(this.expand){
-			this.radiusNow += ticks * this.speedModifier;
-			this.radiusNow = Math.min(this.radius, this.radiusNow);
-			if(this.radiusNow >= this.radius){
-				this.expand =false;
-				
-			}
-		}
-		else{
-			this.radiusNow -= ticks * this.speedModifier;
-		}
-		if(this.radiusNow <= 0){
-			this.isActive = false;
 			
 		}
-		//apply damage now
+		this.ws.onclose=function(){
+			console.log("connection closed");
+		}
 		
-		for(var i = 0; i <game.level.tanks.length; i++){
-			if(game.level.tanks[i].distance(this.x, this.y)<= this.radiusNow +game.level.tanks[i].w/2){
-				game.level.tanks[i].takeDamage(this.damage*ticks);
-			}
-
-		}
-
-	};
-
-	this.init(weapon);
-
-}
-this.effects.explosion.prototype = new this.objects.base();
-///
-// this.effects.text.js
-///
-
-this.effects.text = function(text,x,y,color,fontDetails){
-
-	this.fontInfo = fontDetails || false;
-	this.message = text ||"???";
-	this.color = color||"#fff";
-	this.x = x || 0;
-	this.y = y || 0;
-	this.ttl = 3;
-	this.isActive = true;
-	this.align = "left";
-	this.type="text";
-	this.after = null;
-
-	this.init = function(){
-	
 	}
-
-	this.draw = function(eContext, context){
-		context.save();
-			if(this.fontInfo){
-				context.font = this.fontInfo;
-			}
-			context.fillStyle=this.color;
-			context.textAlign = this.align;
-			context.fillText(this.message, this.x, this.y)
-
-		context.restore();
-
-	};
-	this.update =function(ticks){
-		this.ttl -=ticks;
-		if(this.ttl <=0){
-			this.isActive = false;
-			if(this.after){
-				this.after();
-			}
-		}
-
-	}
-	this.init();
-};
-this.effects.text.prototype = new this.objects.base();///
-//	this.events
-///
-
-if(!this.events){
-	this.events = {};
-}
-
-///
-//	this.events.removeBaseEvents
-///
-
-//remove some diesel base events for chromcast
-this.events.click= function(){};
-this.events.windowkeydown= this.events.click;
-this.events.windowkeyup= this.events.click;
-
-///
-//	this.events.endLevel
-///
-
-this.events.endLevel = function(evt){
-	var tanks = evt.args[0],
-	ended = evt.args[1],
-	message= "A draw, how boring!";
-
-
-	if(tanks[ended].health >0){
-		//last person alive
-		//console.log("victory");
-		message = tanks[ended].player + " wins!";
-	}
-	else{
-		//console.log("draw");
-	}
-
-	//give every player a few dollars.
-	for(var i =0; i <  game.players.length; i++){
-		if(game.players[i].cash>0){
-			game.players[i].cash += game.everyLevelAddCash;
-		}
-		else{
-			game.players[i].cash = game.everyLevelAddCash;
-		}
-		if(game.players[i].name === tanks[ended].player && tanks[ended].health>0){
-			//give the winner a bonus
-			game.players[i].cash += game.levelWinnerBonus;
-
-		}
-	}
-	
-
-	//show  player won message
-	var effect = new game.effects.text(message, this.width/2, this.height/2);
-	effect.align = "center";
-	//change to the next Level or the buy screen
-	effect.after = function(){
-
-		if(game.round == game.maxRounds){
-			diesel.raiseEvent("screenChange", game.activeScreen, "endRound");
-		}else{
-			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
-		}	
-		var msg = new game.messages.gameUpdate();
-		msg.message = {
-			"endLevel":this.level,
-			"players":game.players
-	};
-		game.ws.send(JSON.stringify(msg));
-
-
-	};
-	game.screens.server.level.effects.push(effect);
-
-};
-
-
-
-///
-// this.events.explosion
-///
-
-
-this.events.explosion = function(evt){
-	var bullet = evt.args[0];
-
-
-	
-	var explosion = new game.effects.explosion(bullet.x, bullet.y,
-	 diesel.game.weapons[bullet.weapon]);
-
-	game.sound.instance.startTone(222,300);
-				
-	game.screens.server.level.effects.push(explosion);
-
-	var numHit =0,tnk;
-	for(var i = 0; i < game.level.tanks.length; i++){
-		if(explosion.distance(game.level.tanks[i].x,game.level.tanks[i].y) <= explosion.radius){
-			numHit++;
-		}
-		if(game.activePlayer =game.level.tanks[i].player){
-			tnk = game.level.tanks[i];
-		}
-	}
-
-	if(tnk){
-		tnk.hits+= numHit;
-	}
-	
-
-};
-
-
-///
-// this.events.fire
-///
-
-this.events.fire = function(evt){
-	//ge teh corrds from teh tank 
-	var tank = evt.args[0];
-	tank.isActive = 0;
-
-	var level = diesel.game.screens.server.level||false;
-	
-	if(level){
-
-		var numbullets = level.effects.length;
-		//remove any text shown.
-		for(var i =0 ; i < level.effects.length;i++){
-			if(this.level.effects[i].type =="text"){
-				numbullets--;
-			}
-		}
-		//generate a projectile add it to the level
-		if(numbullets<=0){
-			var bullet = new diesel.game.effects.bullet(tank);
-			
-			level.effects.push(bullet);
-
-			//raise a turn change event.
-
-			//level.nextPlayer();
-
-		}
-	}
-
-	//TODO Sound.
-
-
-
-};
-
-
-///
-//	this.events.miss
-///
-
-this.events.miss = function(evt){
-	//change the active player
-	console.log("misssed advanced player");
-	
-	//play a sound
-	game.sound.instance.startTone(777,300);
-
-};
-
-
-///
-//  this.messages
-///
-
-if(!this.messages){
-	this.messages ={};
-}
-
-this.messages.base = {
-	"type":"info",
-	"content":{},
-	"player":"unknown",
-	parse:function(data){
-		console.log(data);
-	},
-	toString:function(){
-		return JSON.stringify(this);
-	}
-}
-
-
-
-
-// heartbeat from the server
-this.messages.heartbeat = function(data){
-
-};
-this.messages.heartbeat.prototype = this.messages.base;
-
-
-//hello message
-this.messages.hello = function(player){
-	this.type = "hello";
-	this.player = player;
-	this.message = player;
-};
-this.messages.hello.prototype = this.messages.base;
-
-
-
-
-// list games on teh server
-this.messages.listGames = function(data){
-	this.type= "listGames";
-	this.content = null;
-	this.player = null;
-};
-this.messages.listGames.prototype = this.messages.base;
-
-//the list of games from the server
-this.messages.gameList = function(data){
-	this.type= "gameList";
-	this.content = {"type":"tanks","version": this.version};;
-	this.player = null;
-	this.process = function(data){
-		this.screens.gameList.networkGames = data.message.games||data.message;
-		this.screens.gameList.loading =false;
-	};
-};
-this.messages.gameList.prototype = this.messages.base;
-
-
-
-// join a game
-this.messages.joinGame = function(gameid, player, isQuick){
-	this.type= "joinGame";
-	this.game = gameid;
-	this.player = player || this.localPlayer;
-	this.message = {quick:isQuick||false};
-
-};
-this.messages.joinGame.prototype = this.messages.base;
-
-// round start
-
-
-
-//create a game
-this.messages.createGame = function(gameid){
-	this.type= "createGame";
-	this.game = gameid;
-	this.content = {"type":"tanks","version": this.version};
-	this.player =null;
-
-};
-this.messages.createGame.prototype = this.messages.base;
-
-//create a game
-this.messages.error = function(){
-	this.type= "error";
-	this.process = function(data){
-		console.log("ERROR",data);
-		alert(data.message);
-	};
-
-};
-this.messages.error.prototype = this.messages.base;
-
-
-
-//a game sent uppdates
-this.messages.gameUpdate = function(){
-	this.type= "gameUpdate";
-	this.game = diesel.game.networkGame;
-	this.process = function(data){
-		
-		if(!diesel.game.networkGame){
-			//we are connected to a game now our first message
-			diesel.game.networkGame = data.game;
-		}
-		//we are in the right screen to parse our net message
-		if(diesel.game.screens && 
-			diesel.game.screens[diesel.game.activeScreen] &&
-			diesel.game.screens[diesel.game.activeScreen].readNetMessage ){
-				diesel.game.screens[diesel.game.activeScreen].readNetMessage(data)
-		}
-		else{
-			if(diesel.debug){
-				console.log("unable to process message", data);
-
-			}
-		}
-
-		
-	};
-
-};
-this.messages.gameUpdate.prototype = this.messages.base;
-
-
 
 
 ///
@@ -901,26 +112,6 @@ this.messages.gameUpdate.prototype = this.messages.base;
 
 if(!this.mixin){
 	this.mixin = {};
-}
-///
-//	this.mixin.damageable
-///
-
-this.mixin.damageable= {
-	"health":100,
-	"maxHealth":100,
-	"shouldOverride":false,
-	"takeDamage":function(amount, type){
-		if(!type){
-			type="generic";
-		}
-		this.health -= amount;
-	//	console.log(amount, this.health);
-	},
-	"isDead":function(){
-		return this.health <=0;
-	}
-
 }///
 //	this.mixin.gravity
 ///
@@ -954,7 +145,23 @@ this.mixin.gravity = {
 		return !onground;
 	}
 
-}///
+}
+///
+//	this.mixin.hoverable
+///
+this.mixin.hoverable = {
+	"hoverActive":false,
+	"shouldOverride":true,
+	"checkHover":function(){
+		if(this.contains(diesel.mouseX,diesel.mouseY)){
+			this.hoverActive = true;
+		}
+		else{
+			this.hoverActive =false;
+		}
+	}
+}
+///
 //	this.mixin.controlable
 ///
 
@@ -1005,6 +212,56 @@ this.mixin.controlable = {
 
 
 ///
+//	this.mixin.damageable
+///
+
+this.mixin.damageable= {
+	"health":100,
+	"maxHealth":100,
+	"shouldOverride":false,
+	"takeDamage":function(amount, type){
+		if(!type){
+			type="generic";
+		}
+		this.health -= amount;
+	//	console.log(amount, this.health);
+	},
+	"isDead":function(){
+		return this.health <=0;
+	}
+
+}///
+//	this.mixin.wind
+///
+
+this.mixin.wind = {
+	"wind":100,
+	"delta":0.01,
+	"direction":0,
+	"terminalVelocity":0,
+	"shouldOverride":false,
+	"applyWind":function(ticks){
+		
+			this.move(ticks, this.direction, this.delta);
+
+			if(this.delta < this.terminalVelocity){
+				this.delta += this.wind*ticks;
+			}
+			else{
+				this.delta = this.terminalVelocity;
+			}
+			
+		
+	},
+	"canBlow":function(ticks){
+		//query the level
+		var level = game.screens.game.match.level;
+
+		return (this.y < level.y);
+	}
+
+}
+///
 //	this.objects
 ///
 
@@ -1019,7 +276,39 @@ this.objects.base = function(){
 this.objects.base.prototype = new diesel.proto.objectBase();
 
 
+///
+//	this.objects.player
+///
 
+this.objects.player = function(name, color){
+	this.name= name|| "fred";
+	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
+	//todo icon:[],
+	this.cash =100;
+	this.alive=true;
+	this.isAI = false;
+	this.tank = null;
+	this.isCastAPI =false;
+	this.ready =false;
+	
+	this.weapons = {};
+	this.activeWeapon = null;
+
+	this.init= function(){
+		var most=0,wname="none";
+		for(var wep in diesel.game.weapons){
+			this.weapons[wep] = diesel.game.weapons[wep].start;
+			if(this.weapons[wep]> most){
+				most = this.weapons[wep];
+				wname = wep;
+			}
+
+			this.activeWeapon = wname;
+		}
+	}
+
+	this.init();
+};
 ///
 //	this.objects.level
 ///
@@ -1251,7 +540,7 @@ this.objects.level = function(players){
 				this.stats.winner= this.tanks[next].player;
 			}
 			else{
-				this.stats.draw = true;
+				this.stats.draw = "Laaaaame!";
 			}
 
 			for(var i = 0 ;i < this.tanks.length;i++){
@@ -1304,209 +593,1227 @@ this.objects.level = function(players){
 
 this.objects.level.prototype = new this.objects.base();
 ///
-//	this.objects.player
+//	this.effects
 ///
 
-this.objects.player = function(name, color){
-	this.name= name|| "fred";
-	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
-	//todo icon:[],
-	this.cash =100;
-	this.alive=true;
-	this.isAI = false;
-	this.tank = null;
-	this.isCastAPI =false;
-	this.ready =false;
-	
-	this.weapons = {};
-	this.activeWeapon = null;
+if(!this.effects){
+	this.effects = {};
 
-	this.init= function(){
-		var most=0,wname="none";
-		for(var wep in diesel.game.weapons){
-			this.weapons[wep] = diesel.game.weapons[wep].start;
-			if(this.weapons[wep]> most){
-				most = this.weapons[wep];
-				wname = wep;
+}///
+// this.effects.bullet;
+///
+
+
+this.effects.bullet = function(tank){
+
+	this.x = tank.x + Math.sin(tank.aim) *tank.w ,
+	this.y = tank.y + tank.h/2 + Math.cos(tank.aim) *tank.w;
+	this.w = 3;
+	this.h = 3;
+	this.color = tank.color;
+	this.angle = tank.aim + Math.PI;
+	this.power = tank.power;
+	this.isActive =true;
+	this.weapon = tank.weapon;
+	this.type="bullet";
+	this.lastDrew= Math.random()/2;
+
+
+	
+	this.init = function(){
+		diesel.addMixin(this, diesel.game.mixin.gravity);
+
+		//remove a bullet from teh players inventroy for shooting.
+		for(var i = 0 ;i < diesel.game.players.length;i++){
+			if(diesel.game.players[i].name == tank.player){
+				diesel.game.players[i].weapons[tank.weapon]--;
+			}
+		}
+	};
+
+	this.draw=function(econtext ,context){
+		if(this.lastDrew > .1){ //draw every tenth of a second or so.
+			this.lastDrew = 0;
+			econtext.save();
+				econtext.translate(this.x,this.y);
+				econtext.rotate(Math.PI/4);
+				econtext.fillStyle = this.color;
+				econtext.fillRect(-1, -1,2,2);
+
+			econtext.restore();
+		}
+
+		context.fillStyle ="#fff";
+		context.fillRect(this.x-1,this.y-1,3,3)
+
+	
+	}
+	this.update=function(ticks){
+		this.lastDrew+=ticks;
+		if( this.isActive){
+
+			var oldx = this.x, 
+			oldy=this.y,
+			_x,
+			_y;
+			
+			this.applyGravity(ticks);
+			this.move(ticks, this.angle, this.power);
+
+			var tests =[this.x,this.y];
+
+			// if we are going too fast we need to check more 
+			// points than the two we drew at. or bullets go through walls and tanks
+			var minDist = 4, 
+				dx = Math.abs(this.x - oldx),
+				dy = Math.abs(this.y - oldy);
+			if( dx>= minDist || dy>=minDist){
+				for(var i = 0 ; i< dx+dy;i+=minDist){
+					
+					tests.push(diesel.lerp(this.x,oldx,i/(dx+dy)));
+					tests.push(diesel.lerp(this.y,oldy,i/(dx+dy)));
+				}
 			}
 
-			this.activeWeapon = wname;
-		}
-	}
+
+			
+			for(var i = tests.length-2 ; i >=0; i-=2){
+				_x = tests[i];
+				_y = tests[i+1];
+
+				//did we hit something?
+				if(game.screens.server.level.collides(_x, _y)){
+					//trigger an explosion.
+					this.isActive= false;
+					this.x= _x, this.y=_y;
+					diesel.raiseEvent("explosion", this);
+					
+					break;
+					
+				}
+				else{
+					//is the bullet still in the screen or above it?
+					if(_x < 0 || 
+						_x > game.width || 
+						_y > game.height){
+						//trigger an explosion.
+						this.isActive= false;
+						
+						diesel.raiseEvent("miss", this);
+						break;
+					}
+				}
+			}
+			
+		}	
+
+	};
+	
+	//bullets should always fall;
+	this.canFall=function(){
+		return true;
+	};
+	
 
 	this.init();
 };
+this.effects.bullet.prototype = new this.objects.base();
+
 ///
-//	this.objects.match
+// this.effects.text.js
 ///
 
-this.objects.match = function(players, level){
+this.effects.text = function(text,x,y,color,fontDetails){
+
+	this.fontInfo = fontDetails || false;
+	this.message = text ||"???";
+	this.color = color||"#fff";
+	this.x = x || 0;
+	this.y = y || 0;
+	this.ttl = 3;
+	this.isActive = true;
+	this.align = "left";
+	this.type="text";
+	this.after = null;
+
+	this.init = function(){
 	
-	this.init =function(players){
-		
+	}
+
+	this.draw = function(eContext, context){
+		context.save();
+			if(this.fontInfo){
+				context.font = this.fontInfo;
+			}
+			context.fillStyle=this.color;
+			context.textAlign = this.align;
+			context.fillText(this.message, this.x, this.y)
+
+		context.restore();
+
+	};
+	this.update =function(ticks){
+		this.ttl -=ticks;
+		if(this.ttl <=0){
+			this.isActive = false;
+			if(this.after){
+				this.after();
+			}
+		}
 
 	}
-	this.draw = function(context){
-		this.level.draw(context);
+	this.init();
+};
+this.effects.text.prototype = new this.objects.base();
+///
+//	this.effects.explosion
+///
+
+this.effects.explosion = function(x,y,weapon){
+
+	this.x = x;
+	this.y = y;
+	this.radius = 15;
+	this.radiusNow= 1;
+	this.expand = true;
+	this.shade = 128;
+	this.speedModifier =50;
+	this.isActive =true;
+	this.damage = 600;
+	this.type="explosion";
+
+	this.init = function(weapon){
 		
+		if(weapon){
+			
+			this.radius = weapon.radius||this.radius;
+		}
 	}
-	this.update=function(ticks){
-		this.level.update(ticks);
+	
+	this.draw = function(eContext, context){
+		if(this.isActive){
+			context.save();
+				context.fillStyle="rgba("+Math.round(this.shade)+", 0,0, 1)";
+				context.beginPath();
+				context.arc(this.x,this.y, this.radiusNow, 0, Math.PI *2);
+				context.closePath();
+				context.fill();
+			context.restore();
+			//draw onthe terrain as well.
+			
+			game.context.terrain.save();
+				
+				game.context.terrain.fillStyle= game.level.backgroundColor;
+				game.context.terrain.beginPath();
+				game.context.terrain.arc(this.x,this.y, this.radiusNow, 0, Math.PI *2);
+				game.context.terrain.closePath();
+				game.context.terrain.fill();
+				
+			game.context.terrain.restore();
+
+			//flag tghe terrain data as dirty
+			game.level.terrainUpdated = true;
+		}
+
+	};
+
+	this.update =function(ticks){
+		this.shade = (this.shade + 1)%256;
+		
+		if(this.expand){
+			this.radiusNow += ticks * this.speedModifier;
+			this.radiusNow = Math.min(this.radius, this.radiusNow);
+			if(this.radiusNow >= this.radius){
+				this.expand =false;
+				
+			}
+		}
+		else{
+			this.radiusNow -= ticks * this.speedModifier;
+		}
+		if(this.radiusNow <= 0){
+			this.isActive = false;
+			
+		}
+		//apply damage now
+		
+		for(var i = 0; i <game.level.tanks.length; i++){
+			if(game.level.tanks[i].distance(this.x, this.y)<= this.radiusNow +game.level.tanks[i].w/2){
+				game.level.tanks[i].takeDamage(this.damage*ticks);
+			}
+
+		}
+
+	};
+
+	this.init(weapon);
+
+}
+this.effects.explosion.prototype = new this.objects.base();///
+//	this.events
+///
+
+if(!this.events){
+	this.events = {};
+}
+
+
+///
+//	this.events.endLevel
+///
+
+this.events.endLevel = function(evt){
+	var tanks = evt.args[0],
+	ended = evt.args[1],
+	message= "A draw, how boring!";
+
+
+	if(tanks[ended].health >0){
+		//last person alive
+		//console.log("victory");
+		message = tanks[ended].player + " wins!";
 	}
+	else{
+		//console.log("draw");
+	}
+
+	//give every player a few dollars.
+	for(var i =0; i <  game.players.length; i++){
+		if(game.players[i].cash>0){
+			game.players[i].cash += game.everyLevelAddCash;
+		}
+		else{
+			game.players[i].cash = game.everyLevelAddCash;
+		}
+		if(game.players[i].name === tanks[ended].player && tanks[ended].health>0){
+			//give the winner a bonus
+			game.players[i].cash += game.levelWinnerBonus;
+
+		}
+	}
+	
+
+	//show  player won message
+	var effect = new game.effects.text(message, this.width/2, this.height/2);
+	effect.align = "center";
+	//change to the next Level or the buy screen
+	effect.after = function(){
+
+		if(game.round == game.maxRounds){
+			diesel.raiseEvent("screenChange", game.activeScreen, "endRound");
+		}else{
+			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+		}	
+		var msg = new game.messages.gameUpdate();
+		msg.message = {
+			"endLevel":this.level,
+			"players":game.players
+	};
+		game.ws.send(JSON.stringify(msg));
+
+
+	};
+	game.screens.server.level.effects.push(effect);
+
+};
+
+
+
+///
+// this.events.explosion
+///
+
+
+this.events.explosion = function(evt){
+	var bullet = evt.args[0];
 
 
 	
+	var explosion = new game.effects.explosion(bullet.x, bullet.y,
+	 diesel.game.weapons[bullet.weapon]);
+
+	game.sound.instance.startTone(222,300);
+				
+	game.screens.server.level.effects.push(explosion);
+
+	var numHit =0,tnk;
+	for(var i = 0; i < game.level.tanks.length; i++){
+		if(explosion.distance(game.level.tanks[i].x,game.level.tanks[i].y) <= explosion.radius){
+			numHit++;
+		}
+		if(game.activePlayer =game.level.tanks[i].player){
+			tnk = game.level.tanks[i];
+		}
+	}
+
+	if(tnk){
+		tnk.hits+= numHit;
+	}
+	
+
+};
 
 
-	this.init(players);
+///
+// this.events.fire
+///
 
-}///
+this.events.fire = function(evt){
+	//ge teh corrds from teh tank 
+	var tank = evt.args[0];
+	tank.isActive = 0;
+
+	var level = diesel.game.screens.server.level||false;
+	
+	if(level){
+
+		var numbullets = level.effects.length;
+		//remove any text shown.
+		for(var i =0 ; i < level.effects.length;i++){
+			if(this.level.effects[i].type =="text"){
+				numbullets--;
+			}
+		}
+		//generate a projectile add it to the level
+		if(numbullets<=0){
+			var bullet = new diesel.game.effects.bullet(tank);
+			
+			level.effects.push(bullet);
+
+			//raise a turn change event.
+
+			//level.nextPlayer();
+
+		}
+	}
+
+	//TODO Sound.
+
+
+
+};
+
+
+///
+//	this.events.miss
+///
+
+this.events.miss = function(evt){
+	//change the active player
+	console.log("misssed advanced player");
+	
+	//play a sound
+	game.sound.instance.startTone(777,300);
+
+};
+
+///
+//	game.events.mousemove
+///
+//used to allow swiping
+
+game.events.mousemove=function(e){
+	if( game.screens[game.activeScreen].mousemove){
+		game.screens[game.activeScreen].mousemove(e);
+	}
+};
+
+
+game.events.mousedown=function(e){
+	game.mouseDown =true
+	if( game.screens[game.activeScreen].mousedown){
+		game.screens[game.activeScreen].mousedown(e);
+	}
+};
+
+game.events.mouseup=function(e){
+	game.mouseDown =false
+	if( game.screens[game.activeScreen].mouseup){
+		game.screens[game.activeScreen].mouseup(e);
+	}
+};
+
+///
+//	tanks.events.webSocket.js
+///
+
+
+///
+// websocket router;
+///
+this.events.routeMessage= function(MessageEvent){
+	var text = MessageEvent.data;
+
+	//console.log("recieved:",text);//, MessageEvent);
+	var data;
+	try{
+		data= JSON.parse(text);
+		if(this.messages[data.type]){
+
+			var msg = new this.messages[data.type]();
+			if(msg.process){
+				msg.process(data);
+			}
+			else{
+				console.log("unprocessable message", msg);
+			}
+
+		}
+		else{
+			console.log("unknown event", data);
+		}
+	}
+	catch(ex){
+		console.log("error parsing message:",ex , data);
+		diesel.shouldLoop = false;
+	}
+
+}
+
+
+
+
+///
+//	game.events.touch
+///
+if(!game.touches){
+	game.touches =[];
+}
+
+game.events.touchstart=function(e){
+	
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX, e.changedTouches[i].pageY);
+		game.touches.push({ identifier: e.changedTouches[i].identifier, 
+			x: coords.x,
+			y: coords.y });
+			if( game.screens[game.activeScreen].click){
+				game.screens[game.activeScreen].click(e.changedTouches[i],coords.x,coords.y);
+			}
+
+
+	}
+	
+};
+
+game.events.touchend=function(e){
+console.log("touchend")
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		for (var j =0; j <game.touches.length;j++){	
+			if(e.changedTouches[i].identifier == game.touches[j].identifier){
+				game.touches.splice(j,i);
+				return;
+			}
+		}
+	}
+	
+
+};
+
+// game.events.touchcancel=function(e){
+// 	e.preventDefault();
+// 	for(var i = 0; i < e.changedTouches.length;i++ ){
+// 		for (var j =0; j <game.touches.length;j++){	
+// 			if(e.changedTouches[i].identifier == game.touches[j].identifier){
+// 				game.touches.splice(j,i);
+// 			}
+// 		}
+// 	}
+// 	return false;
+// };
+
+game.events.touchmove=function(e){
+	
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX,
+		 e.changedTouches[i].pageY);
+
+		if( game.screens[game.activeScreen].touchmove){
+			game.screens[game.activeScreen].touchmove(e,coords.x, coords.y);
+		}
+		else{
+
+			if( game.screens[game.activeScreen].click){
+				game.screens[game.activeScreen].click(e,coords.x, coords.y);
+			}
+		}
+	}
+
+};
+
+// game.events.touchleave=function(e){
+// 	game.events.touchend(e);
+// };
+
+///
+//  this.messages
+///
+
+if(!this.messages){
+	this.messages ={};
+}
+
+this.messages.base = {
+	"type":"info",
+	"content":{},
+	"player":"unknown",
+	parse:function(data){
+		console.log(data);
+	},
+	toString:function(){
+		return JSON.stringify(this);
+	}
+}
+
+
+
+
+// heartbeat from the server
+this.messages.heartbeat = function(data){
+
+};
+this.messages.heartbeat.prototype = this.messages.base;
+
+
+//hello message
+this.messages.playerStateChange = function(player, gameid){
+	this.type = "playerStateChange";
+	this.player = player;
+
+};
+this.messages.playerStateChange.prototype = this.messages.base;
+
+
+
+
+// list games on teh server
+this.messages.listGames = function(data){
+	this.type= "listGames";
+	this.content = null;
+	this.player = null;
+};
+this.messages.listGames.prototype = this.messages.base;
+
+//the list of games from the server
+this.messages.gameList = function(data){
+	this.type= "gameList";
+	this.content = {"type":"tanks","version": this.version};;
+	this.player = null;
+	this.process = function(data){
+		this.screens.gameList.networkGames = data.message.games||data.message;
+		this.screens.gameList.loading =false;
+	};
+};
+this.messages.gameList.prototype = this.messages.base;
+
+
+
+// join a game
+this.messages.joinGame = function(gameid, player, isQuick){
+	this.type= "joinGame";
+	this.game = gameid;
+	this.player = player || this.localPlayer;
+	this.message = {quick:isQuick||false};
+
+};
+this.messages.joinGame.prototype = this.messages.base;
+
+// round start
+
+
+
+//create a game
+this.messages.createGame = function(gameid){
+	this.type= "createGame";
+	this.game = gameid;
+	this.content = {"type":"tanks","version": this.version};
+	this.player =null;
+
+};
+this.messages.createGame.prototype = this.messages.base;
+
+//create a game
+this.messages.error = function(){
+	this.type= "error";
+	this.process = function(data){
+		console.log("ERROR",data);
+		if(diesel.game.screens && 
+			diesel.game.screens[diesel.game.activeScreen] &&
+			diesel.game.screens[diesel.game.activeScreen].netError ){
+			diesel.game.screens[diesel.game.activeScreen].netError(data)
+		}
+		alert(data.message);
+	};
+
+};
+this.messages.error.prototype = this.messages.base;
+
+
+
+//create a game
+this.messages.gameUpdate = function(){
+	this.type= "gameUpdate";
+	this.game = diesel.game.networkGame;
+	this.process = function(data){
+		
+		if(!diesel.game.networkGame || data.game != diesel.game.networkGame){
+			//we are connected to a game now our first message
+			diesel.game.networkGame = data.game;
+		}
+		//we are in the right screen to parse our net message
+		
+		if(diesel.game.screens && 
+			diesel.game.screens[diesel.game.activeScreen] &&
+			diesel.game.screens[diesel.game.activeScreen].readNetMessage ){
+				diesel.game.screens[diesel.game.activeScreen].readNetMessage(data)
+		}
+		else{
+			if(diesel.debug){
+				console.log("unable to process message", data);
+
+			}
+		}
+
+	};
+
+};
+this.messages.gameUpdate.prototype = this.messages.base;
+
+
+
+
+///
 //	tread.screens
 ///
 
 if(!this.screens){
 	this.screens = {};
 }
+
 ///
-//	cast.screens.endRound
+//	game.screens.buy
 ///
-/*
-shown by the server durring connection.
-*/
-this.screens.endRound  = function(){
-	this.timeToShow = 60;
-	this.timer = this.timeToShow;
 
-	this.reset = function(){
-		this.timer = this.timeToShow;
-	}
+game.screens.buy = function(){
+	
+	this.reset = function(from, to){
+	
 
-
-	this.draw =function(){
-		game.context.effects.clearRect( 0,0, game.width, game.height);
-		game.context.effects.fillStyle= "rgba(0, 0, 0, .75)";
-		game.context.effects.fillRect( 0,0, game.width, game.height);
-		
-
-		// TODO draw the last round stats;
-		game.context.effects.strokeStyle= "#fff";
-		game.context.effects.strokeRect(50,100, game.width -100, game.height - 150);
-		game.context.effects.fillStyle= "#fff";
-		var i=1;
-		for(var stat in game.level.stats){
-			game.context.effects.fillText(stat +" : "+ game.level.stats[stat], 50, 100+25*i);
-			i++;
-		}
-		//show the timer
-		game.context.effects.fillStyle= "#fff";
-		game.context.effects.fillText( Math.ceil(this.timer) + " seconds to close", 50, 50);
-		game.context.effects.fillText( "Thanks for playing, GGs", 50, 75);
-
-
-		
-	}
-
-	this.update =function(ticks){
-		this.timer -= ticks;
-
-		if(this.timer <=0 &&game.cast &&game.cast.readyState ==4){
-			window.close();
-		}
-	}
-
-};
-
-this.screens.endRound.prototype =  new diesel.proto.screen();
-this.screens.endRound = new this.screens.endRound();
-///
-//	tread.screens.buying
-///
-/*
-shown by the server durring connection.
-*/
-this.screens.buying  = function(){
-	this.timeToShow = 10;
-	this.timer = this.timeToShow;
-
-	this.reset = function(){
-		this.timer = this.timeToShow;
-	}
+	};
 
 	this.draw= function(){
-		game.context.effects.clearRect( 0,0, game.width, game.height);
-		game.context.effects.fillStyle= "rgba(0, 0, 0, .75)";
-		game.context.effects.fillRect( 0,0, game.width, game.height);
-		
-
-		// TODO draw the last round stats;
-		game.context.effects.strokeStyle= "#fff";
-		game.context.effects.strokeRect(50,100, game.width -100, game.height - 150);
-		game.context.effects.fillStyle= "#fff";
-		var i=1;
-		for(var stat in game.level.stats){
-			game.context.effects.fillText(stat +" : "+ game.level.stats[stat], 50, 100+25*i);
-			i++;
-		}
-
-		
-		//show the timer
-		game.context.effects.fillStyle= "#fff";
-		game.context.effects.fillText( Math.ceil(this.timer) + " seconds to the next round", 50, 50);
-		game.context.effects.fillText( "Get to buying  stuff if you need it.", 50, 75);
-
-
-	}	
-
+	
+	};
 	this.update =function(ticks){
-		this.timer -= ticks;
+	
+	}
 
-		if(this.timer <=0){
-			diesel.raiseEvent("screenChange", "buying","server");
+
+};
+game.screens.buy.prototype = new game.screens.base();
+game.screens.buy = new game.screens.buy();
+///
+//	game.screens.menu
+///
+
+game.screens.menu = function(){
+	var i = 0;
+	var screens = "";
+
+
+	this.clickZones=[
+	{//name
+		x:game.width/4,
+		y:game.height/2,
+		w:game.width/2,
+		h:game.fontSize,
+		click:function(evt){
+			var name = prompt("Enter your player name:",game.localPlayer.name);
+			if(name.length > 0){
+				game.localPlayer.name = name;
+				diesel.save("player",game.localPlayer);
+			}
+
+		}
+	},
+	{//go
+		x:game.width/4,
+		y:game.height/4*3,
+		w:game.width/2,
+		h:game.fontSize,
+		click:function(evt){
+			diesel.raiseEvent("screenChange","menu","gameList");
 		}
 	}
+	];
+
+	this.reset = function(from, to){
+	
+
+	};
+
+	this.draw= function(){
+		game.context.main.fillStyle="#000";
+		game.context.main.fillRect(0,0,game.width-1, game.height-1);
+		game.context.main.fillStyle="#fff";
+		game.context.main.textAlign = "left";
+		var z;
+		game.context.main.fillText("MENU:  Diesel Tanks v"+game.version,0,game.fontSize);
+		game.context.main.fillText("This requires web sockets,",0,game.fontSize*3);
+		game.context.main.fillText("Get chrome for android on your phone", 0, game.fontSize*4)
+		game.context.main.fillText("Chromecast the first player",0,game.fontSize*5);
+
+
+		game.context.main.strokeStyle="#666";
+
+		for(var i = 0 ; i < this.clickZones.length ;i++){
+			game.context.main.strokeRect(this.clickZones[i].x,this.clickZones[i].y,
+				this.clickZones[i].w,this.clickZones[i].h)
+		}
+
+		var box  =this.clickZones[0];
+		game.context.main.textAlign ="center";
+		game.context.main.fillText("You are Called:", box.x+box.w/2,box.y);
+		game.context.main.fillText(game.localPlayer.name, box.x+box.w/2,box.y+game.fontSize);
+
+		box = this.clickZones[1];
+
+		game.context.main.fillText("Play", box.x+box.w/2,box.y+game.fontSize);		
+		game.context.main.textAlign ="left";
+		
+	
+	};
+	this.update =function(ticks){
+	
+	}
+
+
+};
+game.screens.menu.prototype = new game.screens.base();
+game.screens.menu = new game.screens.menu();
+///
+//	game.screens.game
+///
+
+//this is the demo screen
+game.screens.game = function(){
+	this.time = 0;
+
+
+
+	
+
+	this.reset = function(from, to){
+		game.level = new game.objects.level(game.players);
+		game.round ++;
+		this.time = 0;
+
+
+	};
+
+	this.draw= function(){
+		game.level.draw(game.context.main);
+
+		game.context.main.fillRect(diesel.mouseX, diesel.mouseY,5,5)
+
+	};
+	this.update =function(ticks){
+		game.level.update(ticks);
+		this.time += ticks;
+		
+
+	}
 	this.readNetMessage =function(gameUpdate){
-		var msg =gameUpdate.message;
-		if(msg){
-			if(msg.buy){
+
+
+	}
+
+
+};
+game.screens.game.prototype = new game.screens.base();
+game.screens.game = new game.screens.game();
+///
+//	game.screens.client
+///
+
+game.screens.client = function(){
+	this.isZoomed = true;
+	this.origin ={x:game.width/2, y:game.height/3*2, w: game.height/4};
+	this.arcwidth =32;
+	this.playerId = 0;
+	this.pct = .2;
+	this.isMyTurn =true;
+	this.fontSize	=game.height/10;
+	this.reset =function(){
+		this.fontSize	=game.height/10;
+
+	}
+	
+	this.clickZones = [
+		{ //fire b utton
+			x:game.width/2 - 64, 
+			y:game.height-96,
+			w: 128,
+			h: 64,
+			click : function(evt){
 				
-				for(var i = 0; i < game.players.length; i++){
-					if(game.players[i].name == gameUpdate.player.name){
+				//send update
+				
+				var msg = new game.messages.gameUpdate();
+				msg.message = {"fire":game.localPlayer.tank};
+				game.ws.send(JSON.stringify(msg));
 
-						var cost = game.weapons[msg.buy].cost;
-						if(game.players[i].cash >= cost){
+				//todo draw line for this one
+				
 
-							console.log(msg.player.name + " bought " + msg.buy);
-
-							//deduct the $$$
-							game.players[i].cash -= cost;
-
-							//add an item to our request
-							if(!game.players[i].weapons[item]){
-								game.players[i].weapons[item] =1;
-							}
-							else{
-								game.players[i].weapons[item]++;
-							}
-						}
-					}
-
-				}
 			}
+		},
+		{ //power
+			x:game.width/6, 
+			y:game.height/4*3,
+			w: game.width/3*2,
+			h: 48,
+			click : function(x,y){
+				
+				var _x = x||diesel.mouseX;
+				var _y = y||diesel.mouseY;
 
-			//forwarrd the heart beat message.
-			if(msg.heartbeat){
-				game.screens.setup.readNetMessage(gameUpdate);
+				game.localPlayer.tank.safetyOff
+
+				game.screens.client.pct = (_x - game.screens.client.clickZones[1].x)/(game.screens.client.clickZones[1].w);
+				var p =  Math.round(game.localPlayer.tank.maxPower * game.screens.client.pct);
+				game.localPlayer.tank.power = diesel.clamp(p,0,game.localPlayer.tank.maxPower * (game.localPlayer.tank.health/game.localPlayer.tank.maxHealth));
+				var msg = new game.messages.gameUpdate();
+				msg.message = {"aim":game.localPlayer.tank};
+				game.ws.send(JSON.stringify(msg));
+
+
+			}
+		},
+		
+
+		{
+			x:0, 
+			y:game.height/4,
+			w: game.width,
+			h: game.height/12 *5,
+			click : function(x,y){
+				
+				var _x = x||diesel.mouseX;
+				var _y = y||diesel.mouseY;
+
+				//power down
+				
+				//check the distance to the origin
+
+				var angle = Math.atan2(_x - game.screens.client.origin.x, 
+						_y - game.screens.client.origin.y)
+						game.localPlayer.tank.aim =  angle;
+				
+				
+				var msg = new game.messages.gameUpdate();
+				msg.message = {"aim":game.localPlayer.tank};
+				game.ws.send(JSON.stringify(msg));
+
+
+
+			}
+		},
+		{
+
+
+		}
+
+	];
+
+	this.draw = function(){
+
+		game.context.main.fillStyle = "#000000";
+		game.context.main.fillRect(1,1,game.width-2,game.height-2);
+		
+		
+		//TODO
+		if(game.localPlayer.tank){
+			//draw the tank.
+			this.drawTank(game.context.main);
+
+			//draw the world
+
+			if(!game.localPlayer.tank.isDead()){
+				//gui
+				this.drawGui(game.context.main);
+			}
+			else{
+				//death message
+				this.drawSkull(game.context.main);
 			}
 		}
+		else{
+			//TODO! is there a lobby?
+			
+			this.drawSkull(game.context.main);
+
+
+		}
+
+
+
+
+
+
+	};
+
+	this.update = function(ticks){
+		//this.isMyTurn = (game.level.activePlayer || 0) === this.playerId;
+	};
+
+	this.drawSkull = function(context){
+		//TODO
+		context.fillStyle ="#fff";
+		context.textAlign="center";
+		context.fillText("You're DEAD!",game.width/2, game.height/2);
+		context.fillText("Try not to smack talk too much while they finish duking it out",game.width/2, game.height/2 + this.fontSize);
+		context.textAlign="left";
+	};
+
+	this.drawTank = function(context){
+		//draw that tank action!!!
+		context.save();
+			context.translate(game.width/2,game.height/3*2)
+			context.scale(game.width/4/game.localPlayer.tank.w,game.width/4/game.localPlayer.tank.w);
+			game.localPlayer.tank.draw(context,true);
+		context.restore();
 
 	};
 
 
+	this.drawGui =function(context){
+		var tmp = context.font;
+		context.font = this.fontSize+ " "+ game.font;
+		
+		//show the fire buttons
+		if(this.isMyTurn){
+			this.drawButton(game.context.main, "Fire", 
+					this.clickZones[0].x, this.clickZones[0].y, this.clickZones[0].w,this.clickZones[0].h,
+					 game.localPlayer.tank.color, "#fff", game.localPlayer.tank.color);
+		}
+		
+		//power button
+		game.context.main.fillStyle = "#444";
+		//bg
+		game.context.main.fillRect(this.clickZones[1].x, this.clickZones[1].y, 
+			this.clickZones[1].w,this.clickZones[1].h);
+
+		//avaialbe power
+		game.context.main.fillStyle = "#999";
+		var __w= this.clickZones[1].w * (game.localPlayer.tank.health/ game.localPlayer.tank.maxHealth);	
+		game.context.main.fillRect(this.clickZones[1].x, this.clickZones[1].y,
+		 __w,this.clickZones[1].h);
+		
+
+		//actual power
+		game.context.main.fillStyle = game.localPlayer.tank.color;
+		__w= this.clickZones[1].w * (game.localPlayer.tank.power/ game.localPlayer.tank.maxPower);	
+		game.context.main.fillRect(this.clickZones[1].x, this.clickZones[1].y,
+		 __w,this.clickZones[1].h)	
+		
+		game.context.main.strokeStyle =game.localPlayer.tank.color;
+		game.context.main.strokeRect(this.clickZones[1].x, this.clickZones[1].y, 
+			this.clickZones[1].w,this.clickZones[1].h);
+
+		game.context.main.textAlign = "center";
+		game.context.main.fillStyle = "#fff";
+		game.context.main.fillText("POWER:"+game.localPlayer.tank.power,this.clickZones[1].x +this.clickZones[1].w/2, this.clickZones[1].y + this.clickZones[1].h -this.fontSize /4);
+		
+
+
+		//draw the arc to aim with.
+		context.lineWidth = this.arcwidth;
+		context.lineCap = "round";
+		context.strokeStyle ="rgba(0,0,192, "+(.5 + Math.sin(diesel.frameCount/33)*.25)+")";
+		context.beginPath();
+		context.arc(this.origin.x, this.origin.y, game.width/6+32 ,0, Math.PI,true);
+		context.stroke();
+
+
+		context.closePath();
+		context.lineWidth = 1;
+		context.lineCap = "butt";
+
+		
+
+
+		context.fillStyle = "#fff";
+		context.textAlign = "left";
+		
+
+	//	context.fillText("Current Turn:" +game.level.tanks[game.level.activePlayer].player, this.fontSize, this.fontSize);
+		context.fillText("aim:"+Math.round(diesel.degrees(game.localPlayer.tank.aim)), this.fontSize, this.fontSize*2);
+	//	context.fillText("power:"+ Math.round(game.localPlayer.tank.power), this.fontSize, this.fontSize*3);
+		context.fillText("health:"+Math.ceil(game.localPlayer.tank.health), this.fontSize, this.fontSize*4);
+
+		context.font = tmp;
+
+	};
+
+	this.drawButton = function(context,text,x,y,w,h, fill, textfill,  stroke, disabled){
+		var f = fill || context.fillStyle;
+		var t = textfill || context.strokeStyle;
+		var s =  stroke || context.strokeStyle;
+		var d = diesel.frameCount%30 /10 +1;
+
+
+		if(!disabled){
+			context.strokeStyle = s;
+			context.strokeRect(x -d, y -d, w +2 *d, h +2*d);
+		}
+		context.fillStyle =f;
+		context.fillRect(x,y,w,h);
+		context.fillStyle = t;
+		context.textAlign= "center";
+		context.fillText(text, x +w/2, y+h/2);
+
+	};
+	this.readNetMessage =function(gameUpdate){
+		var msg =gameUpdate.message;
+		//TODO validate message
+
+		//is it a join message
+		if(msg.joined){
+			if(game.level && game.level.effects){
+				var effect = new game.effects.text(msg.joined.name+" joined",
+					 this.fontSize, this.fontSize);
+				game.level.effects.add(effect);
+			}
+		}
+		
+		//the level has changed
+		if(msg.newLevel){
+			
+			if(!game.level)
+				{ game.level = new game.objects.level([]);};
+			
+			diesel.addMixin(game.level, msg.newLevel);
+
+			//find our tank and attach to our player
+			for(var t =0 ; t< msg.newLevel.tanks.length;t++){
+				if(msg.newLevel.tanks[t].player == game.localPlayer.name){
+					console.log("found tank for player");
+					game.localPlayer.tank = new game.units.tank(
+						msg.newLevel.tanks[t].x,
+						msg.newLevel.tanks[t].y,game.localPlayer);
+					diesel.addMixin(game.localPlayer.tank,msg.newLevel.tanks[t], true);
+					this.playerId = t;
+				};
+			}
+			
+		}
+
+		//played is a player was hit
+		if(msg.hit){
+			game.tank.health -= msg.hit;
+			//TODO play a sound
+
+			if(game.tank.isDead()){
+				this.drawSkull(game.context.main);
+			}
+
+		}
+		//played is a player was moved
+		if(msg.move){
+
+		}
+
+		//change turn
+		if(msg.next){
+			game.level.activePlayer = msg.next;
+		}
+
+		//ignored messages
+		/*
+		//show where they are aiming
+		if(msg.aim){
+
+		}
+
+		//show the fire effect
+		if(msg.fire){
+
+		}
+		*/
+
+
+
+
+	};
+	this.mousemove =function(evt){
+		var coords = diesel.util.getLocalCoords(evt.pageX, evt.pageY);
+			game.context.main.beginPath();
+			game.context.main.arc(coords.x, coords.y, 4, 0, 2*Math.PI, false);  // a circle at the start
+			game.context.main.fillStyle = "#f00";
+			game.context.main.fill();
+		
+			
+			this.click(evt,coords.x, coords.y);
+
+		
+	};
+	this.touchmove =function(evt,x,y){
+		
+		
+			
+			//SKIP FIRE
+			for(var  j = 1; j < this.clickZones.length;j++){
+				if(this.clickZones[j].x< x &&
+					this.clickZones[j].x +this.clickZones[j].w > x &&
+					this.clickZones[j].y < y &&
+					this.clickZones[j].y +this.clickZones[j].h > y){
+					this.clickZones[j].click(x,y);
+					
+				}
+
+			}
+		
+
+		
+	};
+	this.touchend =function(evt,x,y){
+		if(this.clickZones[0].x< x &&
+					this.clickZones[0].x +this.clickZones[0].w > x &&
+					this.clickZones[0].y < y &&
+					this.clickZones[0].y +this.clickZones[0].h > y){
+					this.clickZones[0].click(x,y);
+					
+				}
+
+	}
+	this.click =function(evt,x,y){
+
+	x = x ||diesel.mouseX;
+	y = y ||diesel.mouseY;
+
+	//SKIP FIRE
+	for(var  j = 0; j < this.clickZones.length;j++){
+		if(this.clickZones[j].x< x &&
+			this.clickZones[j].x +this.clickZones[j].w > x &&
+			this.clickZones[j].y < y &&
+			this.clickZones[j].y +this.clickZones[j].h > y){
+			this.clickZones[j].click(x,y);
+			
+		}
+
+	}
+
+
+
+	};
+
 
 };
 
-this.screens.buying.prototype =  new diesel.proto.screen()
-this.screens.buying = new this.screens.buying();
+game.screens.client.prototype = new game.screens.base();
+game.screens.client = new game.screens.client();
+
 ///
 //	tread.screens.server
 ///
@@ -1610,47 +1917,205 @@ this.screens.server = function(){
 		}
 
 		if(msg.dropped){
-			for(var i = 0; diesel.game.players.length; i++){
-					if(game.players[i].name === msg.message.dropped.name){
-
-						game.players.splice(i,1);
-					
-						for(var j = 0; j < game.level.tanks.length; j++){
-							if(game.level.tanks[j].player === msg.dropped.player.name){
-
-							
-								//insert an ai  in the slot
-								diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
-
-								// notifiy the players
-								var eff = new game.effects.text(msg.dropped.player.name+" dropped. Replaced with AI", game.width/3,50,"#fff");
-								game.level.effects.push(eff);
-							}
-
-						}
-
-						
-
-					}
-				}
 			
+			for(var i = 0;i< game.players.length; i++){
+					
+				if(game.players[i] &&  game.players[i].name  && game.players[i].name === msg.dropped.name){
 
+					game.players.splice(i,1);
+				
+					i+=game.players.length;
+
+				}
+			}
+			
+			console.log("dropped player", msg.dropped.name);
+
+			for(var j = 0; j < game.level.tanks.length; j++){
+				if(game.level.tanks[j].player === msg.dropped.name){
+
+					
+					//insert an ai  in the slot
+					diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
+					//console.log(game.level.tanks[j].name);
+					 game.level.tanks[j].player = game.level.tanks[j].name;
+
+					// // // notifiy the players
+					var eff = new game.effects.text(msg.dropped.name+" dropped.", game.width/3,50,"#fff");
+					
+					 game.level.effects.push(eff);
+
+					game.level.tanks[j].health=0;
+
+					if(game.level.activePlayer == j){
+						game.level.tanks[j].power =0;
+						game.level.tanks[j].fire();
+					}
+
+					// j+=game.level.tanks.length;
+					console.log("removed tank");
+				}
+
+			}
 		}
-	
-
-
-
-		
-
-
-
-	}
+	}	
 
 
 };
 this.screens.server.prototype = new diesel.proto.screen()
 this.screens.server = new this.screens.server();
+
 ///
+//	game.screens.gameList
+///
+
+game.screens.gameList = function(){
+
+	this.clickZones =[
+		
+		{	//back
+			x:0,
+			y:game.fontSize,
+			w:game.width/3,
+			h:game.fontSize,
+			click:function(){
+				diesel.raiseEvent("screenChange", "gameList","menu");
+			}
+		},
+		{ //list
+			x: game.fontSize*1,
+			y: game.fontSize*3,
+			w: game.width - game.fontSize*2,
+			h: game.height - game.fontSize*2,
+			click:function(evt){
+
+				//did we select a game
+				
+				var i =  Math.floor((diesel.mouseY - game.screens.gameList.clickZones[1].y) / game.fontSize);
+				
+				if(i===game.screens.gameList.selected){
+					//join game
+					if(game.screens.gameList.networkGames.length > i){
+						if(!game.screens.gameList.networkGames[i].players){
+							game.isServer =true;
+													
+						}
+
+						var netgame = game.screens.gameList.networkGames[i];
+						var msg = new game.messages.joinGame(netgame.serverId);
+						game.ws.send(msg);
+					}
+					else{
+						selected = null;
+					}
+
+				}
+				else{
+					game.screens.gameList.selected = i;
+				}
+
+			}
+		},
+		{	//refresh
+			x:game.width/3*2,
+			y:game.fontSize,
+			w:game.width/3,
+			h:game.fontSize,
+			click:function(){
+				game.screens.gameList.refresh();
+
+			}
+		},
+		{	//createGame
+			x:game.width/3,
+			y:game.fontSize,
+			w:game.width/3,
+			h:game.fontSize,
+			click:function(){
+				var name = prompt("what is your game name?");
+				var msg = new game.messages.createGame(name);
+				game.ws.send(msg);
+				game.screens.gameList.refresh();
+
+
+			}
+		},
+	];
+
+	this.networkGames = [];
+	this.loading = false;
+	this.selected = null;
+
+	this.refresh = function(){
+		game.ws.send(new game.messages.listGames());
+		this.loading = true;
+	};
+	this.reset =function(){
+		this.refresh();
+
+	}
+
+	this.draw =function(){
+		game.context.main.fillStyle = "#000";
+		game.context.main.fillRect(0,0,game.width -1, game.height-1);
+		
+		game.context.main.fillStyle="#fff";
+		game.context.main.strokeStyle="#666";
+
+		for(var i = 0 ; i < this.clickZones.length ;i++){
+			game.context.main.strokeRect(this.clickZones[i].x,this.clickZones[i].y,
+				this.clickZones[i].w,this.clickZones[i].h)
+		}
+		game.context.main.save();
+
+		game.context.main.fillText("back",this.clickZones[0].x,this.clickZones[0].y+game.fontSize);
+
+		game.context.main.fillText("refresh",this.clickZones[2].x,this.clickZones[2].y+game.fontSize);
+		game.context.main.fillText("new",this.clickZones[3].x,this.clickZones[3].y+game.fontSize);
+		
+		game.context.main.translate(this.clickZones[1].x,this.clickZones[1].y)
+		var netgame;
+		
+
+		for(var i = 0; i<this.networkGames.length;i++){
+			netgame = this.networkGames[i];
+			game.context.main.translate(0,game.fontSize);
+			game.context.main.textAlign = "left";
+			game.context.main.fillText(netgame.players +"/"+netgame.playerLimit+" "+netgame.id,game.fontSize,0, this.clickZones[1].w, game.fontSize);
+			if( i == this.selected){
+				game.context.main.fillText(">",0,0);
+			}
+
+		}
+		game.context.main.textAlign = "left";
+		if(this.loading){
+			game.context.main.translate(0,game.fontSize*2);
+			game.context.main.fillText("loading",0,0);
+		}
+		game.context.main.restore();
+
+	};
+
+	
+
+
+
+};
+
+game.screens.gameList.prototype = new game.screens.base();
+game.screens.gameList = new game.screens.gameList();
+
+///
+//	game.screens.player
+///
+
+//should allow the player to edit their name, color 
+
+game.screens.player =function(){
+
+}
+game.screens.player.prototype= new game.screens.base();
+game.screens.player = new game.screens.player();///
 //	tread.screens.setup
 ///
 /*
@@ -1660,7 +2125,7 @@ this.screens.setup  = function(){
 	this.countdownTime = 1;
 	this.CountDownRemaining = 0;
 	this.allReady = false;
-	this.addressOfCLient = "lbrunjes.github.io/game/tanks";
+	this.addressOfCLient = "lbrunjes.github.io/games/tanks";
 
 	this.draw= function(){
 		var me = diesel.game;
@@ -1768,7 +2233,9 @@ this.screens.setup  = function(){
 	};
 
 	this.readNetMessage = function(msg){
-		
+		if(diesel.debug){
+			console.log("rxed",msg.message);
+		}
 		//this screen only cares about heart beats
 		if(msg && msg.message){
 
@@ -1793,11 +2260,13 @@ this.screens.setup  = function(){
 
 
 			if(msg.message.dropped){
+				console.log("dropped player", msg.message.dropped);
 				//remove teh player from the players list
-				for(var i = 0; diesel.game.players.length; i++){
-					if(game.players[i].name === msg.message.dropped.name){
+				for(var i = 0; i< game.players.length; i++){
+					if(game.players[i] && game.players[i].name && game.players[i].name === msg.message.dropped.name){
 
-						game.players.splice(i,1);
+						//game.players.splice(i,1);
+						//i--;
 
 					}
 				}
@@ -1814,64 +2283,75 @@ this.screens.setup  = function(){
 
 this.screens.setup.prototype =  new diesel.proto.screen()
 this.screens.setup = new this.screens.setup ();
+
 ///
-// game.sound
+// this.ai
 ///
-// an oscillator based sound system
-this.sound = {};
 
-this.sound.system= function(){
-	this.context =  null;
-	this.oscillator= null,
-	this.gain = null;
-	this.enabled = false;
+if(!this.ai){
+	this.ai = {};
+}
 
 
-	this.init = function(){
-		this.context = new window.AudioContext();
-
-		this.oscillator = this.context.createOscillator();
-		this.oscillator.frequency.value=0;
-
-		this.oscillator.start(0.5);
-	}
-
-	this.startTone = function(frequency, end){
-		if(this.enabled){
-			var now = this.context.currentTime;
-			this.oscillator.frequency.setValueAtTime(frequency,now);
-			this.oscillator.connect(this.context.destination);
-
-			if(end){
-				setTimeout(game.sound.instance.endTone,end);
-			}
-		}
-
+this.ai.base = function(){
+	
+	this.chooseTarget=function(){
 
 	};
-
-
-
-	this.endTone = function(){
-		var now = game.sound.instance.context.currentTime;
-		game.sound.instance.oscillator.frequency.setValueAtTime(0,now);
-		game.sound.instance.oscillator.disconnect();
+	
+	this.selectWeapon=function(){
+	
+	};
+	
+	this.aim=function(){
+		console.log("AI not aiming, code issues");
+	};
+	
+	this.fire=function(){
+		this.isActive = false;
+		this.safetyOff = false;
+		diesel.raiseEvent("fire", this);
 	};
 
-	this.playSound = function(soundFile){
-		if(enabled){
-			//plays a cached diesel sound
-			
-			if(diesel.soundCache[soundFile]){
-				diesel.soundCache[soundFile].play();
-			}
-		}
+	this.update =function(){
+		console.log("AI not thinking, code issues");
 	}
 
- this.init();
 };
+///
+//	this.ai.misterStupid
+///
 
+this.ai.misterStupid = function(){
+	this.name ="AI #"+Math.round(Math.random() *100000).toString(16);
+	this.isAI ="misterStupid";
+	this.shouldOverride = true;
+	this.isPlayer =false;
+		
+	this.update = function(ticks){
+		
+		if(this.canFall && this.canFall()){
+			this.applyGravity();
+			//TODO calculate damage
+		}
+		else{
 
+			if(this.isActive){
+				//mister stupoid picks random number and adds it to power
+				this.power = Math.random() * this.maxPower;
+
+				//mister stupid takes a rtanomd number and adds it to aim
+				this.aim = diesel.clamp( this.aim + Math.random() - .5, this.directions.left, this.directions.right);
+
+				//mister stupid shoots;
+				this.fire();
+			}
+		}
+
+	}
+
+};
+this.ai.misterStupid.prototype = this.ai.base();
 
 ///
 // game.units.base
@@ -2087,7 +2567,6 @@ this.weapons = {
  this.init();
 
 };
-tread.prototype= new diesel.proto.game();
-var game = new tread();
 
+var game = new gameInstance();
 

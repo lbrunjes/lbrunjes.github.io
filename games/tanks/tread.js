@@ -1,4 +1,4 @@
-// built at Tue Nov 25 11:18:05 2014
+// built at Tue 25 Nov 2014 01:53:16 PM EST
 ///
 //	cast API
 ///
@@ -39,7 +39,7 @@ var tread =function(){
 	// properties
 	this.isServer =true;
 	this.networkGame = null;
-	this.messageHost = "ws://127.0.0.1:9000"  ||"ws://housemark.co:9000";
+	this.messageHost = "ws://housemark.co:9000";
 		
 	this.players =[];
 	this.maxPlayers =2;
@@ -1610,46 +1610,48 @@ this.screens.server = function(){
 		}
 
 		if(msg.dropped){
+			
+			for(var i = 0;i< game.players.length; i++){
+					
+				if(game.players[i] &&  game.players[i].name  && game.players[i].name === msg.dropped.name){
+
+					game.players.splice(i,1);
+				
+					i+=game.players.length;
+
+				}
+			}
+			
 			console.log("dropped player", msg.dropped.name);
 
-			for(var i = 0; game.players.length; i++){
+			for(var j = 0; j < game.level.tanks.length; j++){
+				if(game.level.tanks[j].player === msg.dropped.name){
+
 					
-					if(game.players[i] &&  game.players[i].name  && game.players[i].name === msg.dropped.name){
+					//insert an ai  in the slot
+					diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
+					//console.log(game.level.tanks[j].name);
+					 game.level.tanks[j].player = game.level.tanks[j].name;
 
-						game.players.splice(i,1);
+					// // // notifiy the players
+					var eff = new game.effects.text(msg.dropped.name+" dropped.", game.width/3,50,"#fff");
 					
-						i+=game.players.length;
-						
-						for(var j = 0; j < game.level.tanks.length; j++){
-							if(game.level.tanks[j].player === msg.dropped.name){
+					 game.level.effects.push(eff);
 
-							
-								//insert an ai  in the slot
-								diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
+					game.level.tanks[j].health=0;
 
-								// notifiy the players
-								var eff = new game.effects.text(msg.dropped.name+" dropped. Replaced with AI", game.width/3,50,"#fff");
-								game.level.effects.push(eff);
-							}
-
-						}
-
-						
-
+					if(game.level.activePlayer == j){
+						game.level.tanks[j].power =0;
+						game.level.tanks[j].fire();
 					}
+
+					// j+=game.level.tanks.length;
+					console.log("removed tank");
 				}
-			
 
+			}
 		}
-	
-
-
-
-		
-
-
-
-	}
+	}	
 
 
 };
@@ -1802,11 +1804,11 @@ this.screens.setup  = function(){
 			if(msg.message.dropped){
 				console.log("dropped player", msg.message.dropped);
 				//remove teh player from the players list
-				for(var i = 0; game.players.length; i++){
-					if(game.players[i].name === msg.message.dropped.name){
+				for(var i = 0; i< game.players.length; i++){
+					if(game.players[i] && game.players[i].name && game.players[i].name === msg.message.dropped.name){
 
-						game.players.splice(i,1);
-						i--;
+						//game.players.splice(i,1);
+						//i--;
 
 					}
 				}
