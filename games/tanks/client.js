@@ -1,4 +1,4 @@
-// built at Thu 20 Nov 2014 11:04:55 AM EST
+// built at Tue Nov 25 11:18:06 2014
 ///
 //	index.js
 ///
@@ -13,7 +13,7 @@ var client= function(host){
 
 	this.context={"tank":true};
 	this.connection = null
-	this.messageHost = host || "ws://housemark.co:9000";
+	this.messageHost = host || "ws://127.0.0.1:9000" ||"ws://housemark.co:9000";
 
 	this.screens = {
 		"webclient":{
@@ -112,7 +112,9 @@ var client= function(host){
 		
 	};
 	this.startup = function(){
-		console.log("startup")
+		console.log("startup");
+
+		
 	}
 
 
@@ -173,7 +175,7 @@ this.network = {
 
 		console.log("network error:", data);
 	},
-	onClose :function(){
+	onClose :function(data){
 		
 		console.log("network closed:", data);
 
@@ -860,6 +862,12 @@ $(document).ready(function(){
 
 	});
 
+
+	$(window).bind("beforeunload",function(e){
+		console.log("closed window");
+		client.connection.close();
+
+	});
 	
 	
 });

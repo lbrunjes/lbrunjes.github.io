@@ -1,15 +1,10 @@
-body *,body{
+*{
 margin:0;
 padding:0;
 display:block;
 
 }
-a, span {
-	display:inline-block;
-}
-style,script{
-	display:none;
-}
+
 
 
 body{

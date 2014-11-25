@@ -1,4 +1,4 @@
-// built at Thu 20 Nov 2014 11:04:55 AM EST
+// built at Tue Nov 25 11:18:05 2014
 ///
 //	cast API
 ///
@@ -39,7 +39,7 @@ var tread =function(){
 	// properties
 	this.isServer =true;
 	this.networkGame = null;
-	this.messageHost = "ws://housemark.co:9000";
+	this.messageHost = "ws://127.0.0.1:9000"  ||"ws://housemark.co:9000";
 		
 	this.players =[];
 	this.maxPlayers =2;
@@ -303,9 +303,9 @@ this.connections.webSocket = {
 
 		console.log("network error:", data);
 	},
-	onClose :function(){
+	onClose :function(data){
 		
-		console.log("network error:", data);
+		console.log("network closed:", data);
 		
 	},
 	routeMessage:function(MessageEvent){
@@ -1251,7 +1251,7 @@ this.objects.level = function(players){
 				this.stats.winner= this.tanks[next].player;
 			}
 			else{
-				this.stats.draw = true;
+				this.stats.draw = "Laaaaame!";
 			}
 
 			for(var i = 0 ;i < this.tanks.length;i++){
@@ -1608,6 +1608,39 @@ this.screens.server = function(){
 				console.log("invalid fire command from ", msg.fire.player, msg.fire);
 			}
 		}
+
+		if(msg.dropped){
+			console.log("dropped player", msg.dropped.name);
+
+			for(var i = 0; game.players.length; i++){
+					
+					if(game.players[i] &&  game.players[i].name  && game.players[i].name === msg.dropped.name){
+
+						game.players.splice(i,1);
+					
+						i+=game.players.length;
+						
+						for(var j = 0; j < game.level.tanks.length; j++){
+							if(game.level.tanks[j].player === msg.dropped.name){
+
+							
+								//insert an ai  in the slot
+								diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
+
+								// notifiy the players
+								var eff = new game.effects.text(msg.dropped.name+" dropped. Replaced with AI", game.width/3,50,"#fff");
+								game.level.effects.push(eff);
+							}
+
+						}
+
+						
+
+					}
+				}
+			
+
+		}
 	
 
 
@@ -1632,7 +1665,7 @@ this.screens.setup  = function(){
 	this.countdownTime = 1;
 	this.CountDownRemaining = 0;
 	this.allReady = false;
-	this.addressOfCLient = "lbrunjes.github.io/game/tanks";
+	this.addressOfCLient = "lbrunjes.github.io/games/tanks";
 
 	this.draw= function(){
 		var me = diesel.game;
@@ -1740,7 +1773,9 @@ this.screens.setup  = function(){
 	};
 
 	this.readNetMessage = function(msg){
-		
+		if(diesel.debug){
+			console.log("rxed",msg.message);
+		}
 		//this screen only cares about heart beats
 		if(msg && msg.message){
 
@@ -1761,6 +1796,21 @@ this.screens.setup  = function(){
 					}
 
 				}
+			}
+
+
+			if(msg.message.dropped){
+				console.log("dropped player", msg.message.dropped);
+				//remove teh player from the players list
+				for(var i = 0; game.players.length; i++){
+					if(game.players[i].name === msg.message.dropped.name){
+
+						game.players.splice(i,1);
+						i--;
+
+					}
+				}
+
 			}
 
 
