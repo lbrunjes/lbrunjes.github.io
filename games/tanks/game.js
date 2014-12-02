@@ -1,4 +1,4 @@
-// built at Tue 25 Nov 2014 01:53:16 PM EST
+// built at Tue 02 Dec 2014 11:41:07 AM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -970,7 +970,7 @@ this.events.fire = function(evt){
 		var numbullets = level.effects.length;
 		//remove any text shown.
 		for(var i =0 ; i < level.effects.length;i++){
-			if(this.level.effects[i].type =="text"){
+			if(level.effects[i].type =="text"){
 				numbullets--;
 			}
 		}
@@ -1936,7 +1936,7 @@ this.screens.server = function(){
 
 					
 					//insert an ai  in the slot
-					diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
+					diesel.addMixin(game.level.tanks[j],new game.ai.misterStupid(), true);
 					//console.log(game.level.tanks[j].name);
 					 game.level.tanks[j].player = game.level.tanks[j].name;
 
@@ -1945,12 +1945,12 @@ this.screens.server = function(){
 					
 					 game.level.effects.push(eff);
 
-					game.level.tanks[j].health=0;
+					// game.level.tanks[j].health=0;
 
-					if(game.level.activePlayer == j){
-						game.level.tanks[j].power =0;
-						game.level.tanks[j].fire();
-					}
+					// if(game.level.activePlayer == j){
+					// 	game.level.tanks[j].power =0;
+					// 	game.level.tanks[j].fire();
+					// }
 
 					// j+=game.level.tanks.length;
 					console.log("removed tank");
@@ -2122,10 +2122,15 @@ game.screens.player = new game.screens.player();///
 shown by the server durring connection.
 */
 this.screens.setup  = function(){
-	this.countdownTime = 1;
+	this.countdownTime = 5;
 	this.CountDownRemaining = 0;
 	this.allReady = false;
 	this.addressOfCLient = "lbrunjes.github.io/games/tanks";
+
+	this.reset = function(){
+		//TODO rest scores etc
+		
+	}
 
 	this.draw= function(){
 		var me = diesel.game;
@@ -2265,8 +2270,8 @@ this.screens.setup  = function(){
 				for(var i = 0; i< game.players.length; i++){
 					if(game.players[i] && game.players[i].name && game.players[i].name === msg.message.dropped.name){
 
-						//game.players.splice(i,1);
-						//i--;
+						game.players.splice(i,1);
+						i--;
 
 					}
 				}
@@ -2341,7 +2346,8 @@ this.ai.misterStupid = function(){
 				this.power = Math.random() * this.maxPower;
 
 				//mister stupid takes a rtanomd number and adds it to aim
-				this.aim = diesel.clamp( this.aim + Math.random() - .5, this.directions.left, this.directions.right);
+				this.aim = diesel.clamp( this.aim + Math.random() - .5, diesel.directions.left, 
+					diesel.directions.right);
 
 				//mister stupid shoots;
 				this.fire();

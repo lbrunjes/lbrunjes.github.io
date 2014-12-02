@@ -1,4 +1,4 @@
-// built at Tue 25 Nov 2014 02:04:33 PM EST
+// built at Tue 02 Dec 2014 11:41:09 AM EST
 ///
 //	cast API
 ///
@@ -726,7 +726,7 @@ this.events.fire = function(evt){
 		var numbullets = level.effects.length;
 		//remove any text shown.
 		for(var i =0 ; i < level.effects.length;i++){
-			if(this.level.effects[i].type =="text"){
+			if(level.effects[i].type =="text"){
 				numbullets--;
 			}
 		}
@@ -1413,6 +1413,11 @@ this.screens.endRound  = function(){
 		if(this.timer <=0 &&game.cast &&game.cast.readyState ==4){
 			window.close();
 		}
+		else{
+
+			location.reload();
+			//diesel.raiseEvent("screenChange", game.activeScreen, "setup");
+		}
 	}
 
 };
@@ -1431,6 +1436,12 @@ this.screens.buying  = function(){
 
 	this.reset = function(){
 		this.timer = this.timeToShow;
+
+		//Check to see if therer is only one non server user left
+		if (game.players.length <=2){
+			diesel.raiseEvent("screenChange", "buying", "endRound");
+		}
+
 	}
 
 	this.draw= function(){
@@ -1665,10 +1676,15 @@ this.screens.server = new this.screens.server();
 shown by the server durring connection.
 */
 this.screens.setup  = function(){
-	this.countdownTime = 1;
+	this.countdownTime = 5;
 	this.CountDownRemaining = 0;
 	this.allReady = false;
 	this.addressOfCLient = "lbrunjes.github.io/games/tanks";
+
+	this.reset = function(){
+		//TODO rest scores etc
+		
+	}
 
 	this.draw= function(){
 		var me = diesel.game;
@@ -1808,8 +1824,8 @@ this.screens.setup  = function(){
 				for(var i = 0; i< game.players.length; i++){
 					if(game.players[i] && game.players[i].name && game.players[i].name === msg.message.dropped.name){
 
-						//game.players.splice(i,1);
-						//i--;
+						game.players.splice(i,1);
+						i--;
 
 					}
 				}
