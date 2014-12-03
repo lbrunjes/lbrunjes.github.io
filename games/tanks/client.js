@@ -1,4 +1,4 @@
-// built at Tue 02 Dec 2014 11:41:10 AM EST
+// built at Wed 03 Dec 2014 03:20:06 PM EST
 ///
 //	index.js
 ///
@@ -9,6 +9,7 @@ var client= function(host){
 	this.level=null;
 	this.width =640;
 	this.height =240;
+	this.waiting=true;
 
 
 	this.context={"tank":true};
@@ -20,10 +21,14 @@ var client= function(host){
 			"draw":function(){},
 			"update":function(){},
 			"readNetMessage":function(msg){
+
 				if(msg.message){
 					
 					if(msg.message.heartbeat){
 						///??
+					}
+					else{
+						console.log("message", msg)
 					}
 
 					if(msg.message.nextTurn){
@@ -41,11 +46,14 @@ var client= function(host){
 					}
 
 					if(msg.message.newLevel){
+						client.waiting =false;
 						for(var i = 0 ;i < msg.message.newLevel.tanks.length;i++){
 							if(msg.message.newLevel.tanks[i].player=== client.player.name){
 								//set the local clien to match
-								$("input[name=angle]").val(diesel.degrees(msg.message.newLevel.tanks[i].aim -Math.PI).change());
-								$("input[name=power]").val(msg.message.newLevel.tanks[i].power).change();;
+								$("input[name=angle]").val(diesel.degrees(msg.message.newLevel.tanks[i].aim -Math.PI));
+								$("input[name=power]").val(msg.message.newLevel.tanks[i].power);
+								$("input[name=angle]").change();
+								$("input[name=power]").change();
 								$("#babyMissile").click();
 								client.draw();
 								$("#gameControls").show();
@@ -58,6 +66,7 @@ var client= function(host){
 						}
 					}
 					if(msg.message.endLevel){
+						
 						$("#gameControls").hide();
 						$("#buying").show();
 					}
@@ -124,7 +133,8 @@ var client= function(host){
 
  		client.context.tank.save();
  		client.context.tank.translate(client.width/2, client.height/3*2);
- 		client.context.tank.scale(8,8);
+ 		client.context.tank.scale(4,4);
+
 
  		this.tank.draw(diesel.game.context.tank, true);
  		client.context.tank.restore();
@@ -139,10 +149,24 @@ var client= function(host){
  		//draw how much of each item you have?
  		var x =1;
  		for(var wep in client.player.weapons){
- 			client.context.tank.fillText(client.player.weapons[wep] + " " + client.weapons[wep].name,
- 			 25, 25 *x);
+ 			var txt= client.player.weapons[wep] + " " + client.weapons[wep].name;
+
+ 			if(wep === client.tank.weapon){
+ 			 txt = "["+txt+"]";
+ 			}
+ 			else{
+ 			txt = " "+txt+" ";	
+ 			}
+
+ 			client.context.tank.fillText(txt, 25, 25 *x);
 			x++; 			 
 
+ 		}
+
+ 		//notifiy the player they have joined but will not enter the game until the next round
+ 		if(client.waiting){
+ 			client.context.tank.fillText("You will enter the game when the next round starts", 25, game.height-25);	
+ 			
  		}
 
 
@@ -162,7 +186,7 @@ var client= function(host){
 ///
 
 this.network = {
-	states : ["CONNECTING", "OPEN", "CLOSING","CLOSED"],
+	states : ["CONNECTING", "Connected", "CLOSING","CLOSED"],
 	onOpen :function(){
 		console.log("connected to websocket host", client.messageHost);
 		client.connection.onmessage = client.network.routeMessage;
@@ -405,7 +429,7 @@ this.mixin.gravity = {
 	"canFall":function(ticks){
 		//query the level
 		
-		var onground= diesel.game.screens.server.level.collides(this.x, this.y+1);
+		var onground= diesel.game.level.collides(this.x, this.y+this.h/2+1);
 		
 
 
@@ -490,9 +514,9 @@ this.units.tank = function(x,y,player){
 	this.x = x ||0;
 	this.y = y||0;
 	this.z = 0;
-	this.w=16;
-	this.h=8
-	this.d=16;
+	this.w=32;
+	this.h=16
+	this.d=32;
 	this.aim = Math.PI;
 	this.power = 200;
 	this.maxPower =1000;
@@ -566,9 +590,9 @@ this.units.tank = function(x,y,player){
 
 			context.fillStyle = "#000";
 			//windows are cool.
-			context.fillRect(this.w/-4-1,this.h/-3,2,2);
-			context.fillRect(-1,this.h/-3,2,2);
-			context.fillRect(this.w/4-1,this.h/-3,2,2);
+			context.fillRect(this.w/16*-5,this.h/-3,this.w/8,this.h/4);
+			context.fillRect(this.w/16*-1,this.h/-3,this.w/8,this.h/4);
+			context.fillRect(this.w/16 *3,this.h/-3,this.w/8,this.h/4);
 
 			
 			
@@ -654,7 +678,7 @@ this.weapons = {
 		name:"Missile"
 	},
 	bigMissile:{
-		start:3,
+		start:1,
 		radius:45,
 		cost:100,
 		name:"Big Missile"
@@ -664,6 +688,12 @@ this.weapons = {
 		radius:500,
 		cost:500,
 		name:"Nuke"	
+	},
+	funkyBomb:{
+		start:5,
+		radius:30,
+		cost:100,
+		name:"Funky Bomb"
 	}
 
 };
@@ -765,6 +795,7 @@ $(document).ready(function(){
 
 	$("#gameControls").submit(function(e){
 		e.preventDefault();
+		client.draw();
 		// validate the request
 		if(client.player.weapons[client.tank.weapon] > 0){
 			client.player.weapons[client.tank.weapon]--;
@@ -780,24 +811,6 @@ $(document).ready(function(){
 		}
 
 		
-	});
-
-	$("#weapons button").click(function(e){
-		$("#weapons button").removeClass("selected");
-
-		var $this = $(this), text = $this.attr("id");
-		if(client.player.weapons[text] > 0){
-			client.tank.weapon = text;
-			
-			$this.addClass("selected");
-		}
-		else{
-			
-			client.tank.weapon = "babyMissile";
-			$("#weapons button:first").addClass("selected");
-			
-		}
-
 	});
 
 	$("a.plus").click(function(e){
@@ -816,7 +829,7 @@ $(document).ready(function(){
 
 
 	//add items
-	var items = "";
+	var items = "",buttons= "";;
 
 	for(var wep in client.weapons){
 		items += 
@@ -824,10 +837,34 @@ $(document).ready(function(){
 		'"><a href="#">'+client.weapons[wep].name +'</a> $'+
 		client.weapons[wep].cost+'</div>';
 
+		buttons+= '<button id="'+wep+'">'+client.weapons[wep].name+"</button>"
+
 	}
 
 
 	$("#items").html(items);
+	$("#weapons").html(buttons);
+
+
+	$("#weapons button").click(function(e){
+		$("#weapons button").removeClass("selected");
+		client.draw();
+		var $this = $(this), text = $this.attr("id");
+		if(client.player.weapons[text] > 0){
+			client.tank.weapon = text;
+			
+			$this.addClass("selected");
+		}
+		else{
+			
+			client.tank.weapon = "babyMissile";
+			$("#weapons button:first").addClass("selected");
+			
+		}
+
+	});
+
+
 
 	$("div.item a").click(function(e){
 		console.log("xx");
@@ -861,6 +898,10 @@ $(document).ready(function(){
 		}
 
 	});
+
+
+	//add weapons buttons
+
 
 
 	$(window).bind("beforeunload",function(e){

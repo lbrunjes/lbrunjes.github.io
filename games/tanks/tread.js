@@ -1,4 +1,4 @@
-// built at Tue 02 Dec 2014 11:41:09 AM EST
+// built at Wed 03 Dec 2014 03:20:06 PM EST
 ///
 //	cast API
 ///
@@ -429,8 +429,17 @@ this.effects.bullet = function(tank){
 				_x = tests[i];
 				_y = tests[i+1];
 
+				//did we hit a tank?
+				var hit = false;
+				for(var j = 0; j <game.level.tanks.lenght; j++){
+						hit = hit || game.level.tanks[j].contains(_x,_y);
+				}
+
 				//did we hit something?
-				if(game.screens.server.level.collides(_x, _y)){
+				if(	hit ||
+					game.screens.server.level.collides(_x, _y)||
+					 _y > game.height){
+
 					//trigger an explosion.
 					this.isActive= false;
 					this.x= _x, this.y=_y;
@@ -442,8 +451,8 @@ this.effects.bullet = function(tank){
 				else{
 					//is the bullet still in the screen or above it?
 					if(_x < 0 || 
-						_x > game.width || 
-						_y > game.height){
+						_x > game.width
+						){
 						//trigger an explosion.
 						this.isActive= false;
 						
@@ -473,8 +482,8 @@ this.effects.bullet.prototype = new this.objects.base();
 
 this.effects.explosion = function(x,y,weapon){
 
-	this.x = x;
-	this.y = y;
+	this.x = x||0;
+	this.y = y||0;
 	this.radius = 15;
 	this.radiusNow= 1;
 	this.expand = true;
@@ -489,6 +498,25 @@ this.effects.explosion = function(x,y,weapon){
 		if(weapon){
 			
 			this.radius = weapon.radius||this.radius;
+
+			if(weapon.name === "Funky Bomb"){
+				if(Math.random() <.75){
+					//spawn a bullet at the center
+					var eff= new game.effects.bullet({
+						x:this.x,
+						y:this.y,
+						aim:diesel.directions.up +Math.random() *2 - 1,
+						power:100*Math.random()+25,
+						weapon:"funkyBomb",
+						w:32,
+						h:16,
+						color:"#fff"
+					});
+					console.log(eff);
+					game.level.effects.push(eff);
+				}
+
+			}
 		}
 	}
 	
@@ -520,7 +548,7 @@ this.effects.explosion = function(x,y,weapon){
 	};
 
 	this.update =function(ticks){
-		this.shade = (this.shade + 1)%256;
+		this.shade = Math.sin(diesel.frameCount/10)*128 +128;
 		
 		if(this.expand){
 			this.radiusNow += ticks * this.speedModifier;
@@ -655,17 +683,21 @@ this.events.endLevel = function(evt){
 	//change to the next Level or the buy screen
 	effect.after = function(){
 
+		var msg = new game.messages.gameUpdate();
+		msg.message = {
+			"endLevel":game.level,
+			"players":game.players
+		};
+		game.ws.send(JSON.stringify(msg));
+		console.log("endLEvel sent");
+
 		if(game.round == game.maxRounds){
 			diesel.raiseEvent("screenChange", game.activeScreen, "endRound");
 		}else{
 			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+	
 		}	
-		var msg = new game.messages.gameUpdate();
-		msg.message = {
-			"endLevel":this.level,
-			"players":game.players
-	};
-		game.ws.send(JSON.stringify(msg));
+		
 
 
 	};
@@ -697,7 +729,7 @@ this.events.explosion = function(evt){
 		if(explosion.distance(game.level.tanks[i].x,game.level.tanks[i].y) <= explosion.radius){
 			numHit++;
 		}
-		if(game.activePlayer =game.level.tanks[i].player){
+		if(game.activePlayer = game.level.tanks[i].player){
 			tnk = game.level.tanks[i];
 		}
 	}
@@ -948,7 +980,7 @@ this.mixin.gravity = {
 	"canFall":function(ticks){
 		//query the level
 		
-		var onground= diesel.game.screens.server.level.collides(this.x, this.y+1);
+		var onground= diesel.game.level.collides(this.x, this.y+this.h/2+1);
 		
 
 
@@ -1048,62 +1080,52 @@ this.objects.level = function(players){
 
 	};
 	this.pixelCache =null;
-
+	this.players= players;
 
 
 
 	this.init= function(){
 		console.log("creating level");
 		this.generateTerrain();
+		diesel.game.level =this;
 		
+		this.drawTerrain(game.context.terrain);
+	
+		//insert the tanks into the world
 		this.placeTanks();
-		game.screens.server.match 
-
-		//TODO update active player;
+		
 		this.activePlayer = (game.round % (game.players.length -1))||0;
 		game.round++;
 
-
-		diesel.game.level =this;
-
 		//clear the effect context.
 		game.context.effects.clearRect(0,0, game.width-1, game.height);
-
 	};
 		
 	this.generateTerrain = function(){
-		var	keys= [];
-		while(keys.length <= 3 || Math.random() < .8){
-			keys.push(Math.random() * this.h/2 + this.h/2);
-		}
 		
-		var segment = (this.w/this.terrainScale)/(keys.length -1);
-		for(var x = 0 ; x < this.w / this.terrainScale;x++){
-			var last = Math.floor(x/segment);
-
-
-			var alt = diesel.lerp(keys[last],keys[last+1], (x%segment)/segment) ;
-			alt += Math.random()*10 - 5;
-			alt = diesel.math.clamp(alt, 1, this.h);
-			
-			this.terrain.push(Math.round(alt));			
+		while(this.terrain.length < 6 || Math.random() < .75){
+			this.terrain.push(Math.random() * this.h/2 + this.h/2);
+			this.terrain.push(Math.random() * this.h/2 + this.h/2);
+			this.terrain.push(Math.random() * this.h/2 + this.h/2);
 		}
+		this.terrainScale = this.w/(this.terrain.length -1);
 
+	
 	};
 
 
 
 	this.placeTanks = function(){
 	
-		var step = Math.floor(diesel.game.width / (players.length)); 
+		var step = Math.floor(diesel.game.width / (this.players.length+1)); 
 	
-		for(var i = 0; i < players.length; i++){
+		for(var i = 0; i < this.players.length; i++){
 
 			var x = diesel.clamp(Math.round(step * (i) + (step *.5) * (Math.random()-.5)),
 				step/2, game.width-step/2);
 	
-			if(players[i].color && players[i].name != "server"){
-				this.tanks.push(new diesel.game.units.tank(x, 0, players[i]));
+			if(this.players[i].color && this.players[i].name != "server"){
+				this.tanks.push(new diesel.game.units.tank(x, 16, this.players[i]));
 		
 			}
 			else{
@@ -1113,18 +1135,28 @@ this.objects.level = function(players){
 		
 		this.tanks = diesel.shuffle(this.tanks);
 		
-		///let them fall
-		var tnk;
-		for(var i =0; i < this.tanks.length; i++ ){
-			tnk =this.tanks[i];
-			while(tnk.y + tnk.h/2 < this.terrain[Math.floor(tnk.x/this.terrainScale)]){
-				this.tanks[i].y++;
+		
+		for(var i = 0; i < this.tanks.length; i++){
+			//calculate teh aproximate local maxima
+			var index= Math.round(this.tanks[i].x/ this.terrainScale)
+
+			var mx = Math.min(Math.min(this.terrain[index], this.terrain[index+1]),
+				this.terrain[Math.max(index-1,0)]);
+
+			this.tanks[i].y = mx;
+
+			while(this.tanks[i].canFall()){
+				this.tanks[i].applyGravity(.1);
 			}
 
 		}
+		
 	};
 	
 	this.collides =function(x,y){
+		x = Math.round(x);
+		y = Math.round(y);
+
 		if(x <0 ||y<0||x>this.width){
 			return false;
 		}
@@ -1136,34 +1168,30 @@ this.objects.level = function(players){
 		var pixelColor = "#"+ pixel[0].toString(16)+
 				pixel[1].toString(16)+
 				pixel[2].toString(16);
-		
+
 		hit = (this.foregroundColor === pixelColor);
 
-		
-
-		if(!hit){
-			for(var i =0; i < this.tanks.length;i++){
-				hit = hit || this.tanks[i].contains(x,y);
-			}
-		}
 		return hit;
 	};
 
 	this.drawTerrain = function(terrain){
 		terrain.clearRect(0,0,diesel.game.width -1, diesel.game.height-1);
-		var me = game.screens.server.level;
+		
 
 		
 		terrain.save();
-			terrain.fillStyle=me.backgroundColor;
-			terrain.fillRect(0,0,me.w,me.h);
-			terrain.fillStyle=me.foregroundColor;
+			terrain.fillStyle=this.backgroundColor;
+			terrain.fillRect(0,0,this.w,this.h);
+			terrain.fillStyle= this.foregroundColor;
 			terrain.beginPath();
-			terrain.moveTo(0,me.h -1);
-			for(var x = 0; x <me.terrain.length; x++){
-				terrain.lineTo(x* me.terrainScale, me.terrain[x]);
+			terrain.moveTo(0,this.terrain[0]);
+			for(var x = 1; x <this.terrain.length; x+=2){
+				//terrain.lineTo(x *this.terrainScale, this.terrain[x]);
+				terrain.quadraticCurveTo((x)*this.terrainScale, this.terrain[x], 
+					(x+1)* this.terrainScale, this.terrain[x+1]);
 			}
-			terrain.lineTo(me.w -1, me.h-1);
+			terrain.lineTo(game.level.w -1, game.level.h-1);
+			terrain.lineTo(0, game.level.h-1);
 			terrain.closePath();
 			terrain.fill();
 
@@ -1415,8 +1443,7 @@ this.screens.endRound  = function(){
 		}
 		else{
 
-			location.reload();
-			//diesel.raiseEvent("screenChange", game.activeScreen, "setup");
+			diesel.raiseEvent("screenChange", game.activeScreen, "setup");
 		}
 	}
 
@@ -1431,7 +1458,7 @@ this.screens.endRound = new this.screens.endRound();
 shown by the server durring connection.
 */
 this.screens.buying  = function(){
-	this.timeToShow = 10;
+	this.timeToShow = 30;
 	this.timer = this.timeToShow;
 
 	this.reset = function(){
@@ -1682,8 +1709,12 @@ this.screens.setup  = function(){
 	this.addressOfCLient = "lbrunjes.github.io/games/tanks";
 
 	this.reset = function(){
-		//TODO rest scores etc
+		//TODO reset scores
+
+		//TODO reset bullets
+
 		
+
 	}
 
 	this.draw= function(){
@@ -1692,7 +1723,7 @@ this.screens.setup  = function(){
 		me.context.main.fillRect(0,0, me.width, me.height);
 
 		me.context.main.fillStyle= "#fff";
-		me.context.main.fillText("Hello there...", 25,25);
+		me.context.main.fillText("Diesel TANKS!!!", 25,25);
 
 		
 		
@@ -1721,10 +1752,16 @@ this.screens.setup  = function(){
 		}
 		else
 		{
-			me.context.main.fillText("Welcome to Diesel Tanks", 25,75);
+			
+			me.context.main.fillText("Rounds:"+ diesel.game.maxRounds||"?", 25,75);
+
+
 		}
 
-		//show connected players with color and ready state.
+		me.context.main.fillText("Go here to play: "+this.addressOfCLient, 25, 100);		
+		
+
+		//show connected players with color
 		me.context.main.fillStyle = "#fff";
 		//server is not a player thus all the ones
 		me.context.main.fillText("Connected Players ("+Math.max(me.players.length -1,0)+"/"+me.maxPlayers+")" , 25,150);
@@ -1751,7 +1788,6 @@ this.screens.setup  = function(){
 		}
 		if(me.networkGame){
 			me.context.main.fillText("Game Code:"+ me.networkGame.serverId, 25, me.height-85);
-			me.context.main.fillText("Go here to play: "+this.addressOfCLient, 25, me.height-125);		
 		}
 
 	};
@@ -1930,9 +1966,9 @@ this.units.tank = function(x,y,player){
 	this.x = x ||0;
 	this.y = y||0;
 	this.z = 0;
-	this.w=16;
-	this.h=8
-	this.d=16;
+	this.w=32;
+	this.h=16
+	this.d=32;
 	this.aim = Math.PI;
 	this.power = 200;
 	this.maxPower =1000;
@@ -2006,9 +2042,9 @@ this.units.tank = function(x,y,player){
 
 			context.fillStyle = "#000";
 			//windows are cool.
-			context.fillRect(this.w/-4-1,this.h/-3,2,2);
-			context.fillRect(-1,this.h/-3,2,2);
-			context.fillRect(this.w/4-1,this.h/-3,2,2);
+			context.fillRect(this.w/16*-5,this.h/-3,this.w/8,this.h/4);
+			context.fillRect(this.w/16*-1,this.h/-3,this.w/8,this.h/4);
+			context.fillRect(this.w/16 *3,this.h/-3,this.w/8,this.h/4);
 
 			
 			
@@ -2094,7 +2130,7 @@ this.weapons = {
 		name:"Missile"
 	},
 	bigMissile:{
-		start:3,
+		start:1,
 		radius:45,
 		cost:100,
 		name:"Big Missile"
@@ -2104,6 +2140,12 @@ this.weapons = {
 		radius:500,
 		cost:500,
 		name:"Nuke"	
+	},
+	funkyBomb:{
+		start:5,
+		radius:30,
+		cost:100,
+		name:"Funky Bomb"
 	}
 
 };
