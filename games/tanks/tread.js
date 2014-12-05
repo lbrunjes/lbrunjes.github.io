@@ -1,4 +1,4 @@
-// built at Wed 03 Dec 2014 03:20:06 PM EST
+// built at Fri Dec 5 17:13:27 2014
 ///
 //	cast API
 ///
@@ -1442,8 +1442,9 @@ this.screens.endRound  = function(){
 			window.close();
 		}
 		else{
-
-			diesel.raiseEvent("screenChange", game.activeScreen, "setup");
+			window.reload();
+		
+			//diesel.raiseEvent("screenChange", game.activeScreen, "setup");
 		}
 	}
 

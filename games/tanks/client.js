@@ -1,4 +1,4 @@
-// built at Wed 03 Dec 2014 03:20:06 PM EST
+// built at Fri Dec 5 17:13:28 2014
 ///
 //	index.js
 ///
@@ -891,6 +891,8 @@ $(document).ready(function(){
 			var msg = new client.messages.gameUpdate();
 			msg.message = {"buy":item};
 
+			client.connection.send(msg);
+
 			client.draw();
 		}
 		else{
@@ -900,7 +902,7 @@ $(document).ready(function(){
 	});
 
 
-	//add weapons buttons
+	$("#buying").hide();
 
 
 
