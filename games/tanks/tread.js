@@ -1,4 +1,4 @@
-// built at Fri Dec 5 17:13:27 2014
+// built at Fri Dec 5 17:58:31 2014
 ///
 //	cast API
 ///
@@ -431,7 +431,7 @@ this.effects.bullet = function(tank){
 
 				//did we hit a tank?
 				var hit = false;
-				for(var j = 0; j <game.level.tanks.lenght; j++){
+				for(var j = 0; j <game.level.tanks.length; j++){
 						hit = hit || game.level.tanks[j].contains(_x,_y);
 				}
 
@@ -1438,14 +1438,14 @@ this.screens.endRound  = function(){
 	this.update =function(ticks){
 		this.timer -= ticks;
 
-		if(this.timer <=0 &&game.cast &&game.cast.readyState ==4){
-			window.close();
+		if(this.timer <= 0){//} &&game.cast &&game.cast.readyState ==4){
+			location.reload();
 		}
-		else{
-			window.reload();
-		
-			//diesel.raiseEvent("screenChange", game.activeScreen, "setup");
-		}
+		// else{
+		// 	window.reload();
+
+		// 	//diesel.raiseEvent("screenChange", game.activeScreen, "setup");
+		// }
 	}
 
 };
