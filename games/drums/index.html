@@ -1,0 +1,75 @@
+<!doctype>
+<html>
+<head>
+<title>html5 drum machine</title>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type = "text/javascript">
+var sounds=[];
+var getBits = function(input){
+
+	var out="";
+	for (var i = 0 ;i < input.length;i++)
+	{
+		out += input.charCodeAt(i).toString(2);
+		
+	}
+	return out;
+}
+
+var play =function(beat, rate){
+	var inst = sounds.length;
+	var measure ="";
+	var timing = Math.round(rate *1000)|| 1000;
+	for(var i =0; i < beat.length; i+=inst){
+		measure= beat.substring(i, i+inst);
+		setTimeout(playMeasure, timing * i/inst ,measure);
+	}
+}
+
+///takes s measure and play it using the provided instuments
+var playMeasure= function(bits){
+	console.log(bits);
+	stop();
+	for(var i = 0 ; i < bits.length;i++){
+		if(bits[i] ==1){
+			sounds[i].play();
+		}
+	}
+}
+var stop = function(){
+	for(var i in  sounds){
+		sounds[i].pause();
+		sounds[i].currentTime=0;
+	}
+}
+
+
+$(window).ready(function(e){
+	$("#instruments audio").each(function(){
+		sounds.push(document.getElementById($(this).attr("id")));
+	});
+
+	$("#go").click( function(){
+		var bits= getBits($("#text").val());
+		console.log("bits",bits);
+		play(bits,1);
+		return false;
+	});
+});
+</script>
+</head>
+<body>
+<div id="wrap">
+	<h1>HTML5 DRUM MACHINE</h1>
+	<div id="instruments">
+	<!-- this could really use better drums change this for better options-->
+		
+		<audio src="media/thbb.mp3" id="thbb"></audio>
+		<audio src="media/err.mp3" id="err"></audio>
+	</div>
+	<div>
+		<input id="text" value="boom boom boom"/> <a href="#" id="go">go</a>
+	</div>
+</div>
+</body>
+</html>
