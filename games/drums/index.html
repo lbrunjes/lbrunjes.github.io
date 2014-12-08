@@ -24,9 +24,10 @@ var play =function(beat, rate){
 		measure= beat.substring(i, i+inst);
 		setTimeout(playMeasure, timing * i/inst ,measure);
 	}
+	//should really track these so i couls you know stop things.
 }
 
-///takes s measure and play it using the provided instuments
+///takes measure and play it using the provided instuments
 var playMeasure= function(bits){
 	console.log(bits);
 	stop();
