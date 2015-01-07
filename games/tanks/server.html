@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+	<title>Tanks receiver and server</title>
+	<meta name="viewport" content="width=device-width, user-scalable=no">
+	<link rel="stylesheet" href="game.css" type="text/css" media= "all"/>
+	<script src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
+	<script type="text/javascript" src="../diesel.js"></script>
+	<script type="text/javascript" src="tread.js"></script>
+
+	<script type="text/javascript">
+		document.addEventListener("DOMContentLoaded", function(){
+			
+			diesel.start(game);
+		}, false);
+
+
+	</script>
+	
+
+</head>
+<body>
+	<div id="container">
+		<canvas id="terrain"></canvas>
+		<canvas id="main"></canvas>
+		<canvas id="effects"></canvas>
+	</div>
+  
+</body>
+</html>

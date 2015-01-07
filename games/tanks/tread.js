@@ -1,4 +1,4 @@
-// built at Fri Dec 5 17:58:31 2014
+// built at Tue 06 Jan 2015 01:30:01 PM EST
 ///
 //	cast API
 ///
@@ -334,7 +334,6 @@ this.connections.webSocket = {
 	}
 	catch(ex){
 		console.log("error parsing message:",ex , data);
-		diesel.shouldLoop = false;
 	}
 
 }
@@ -354,29 +353,44 @@ if(!this.effects){
 
 this.effects.bullet = function(tank){
 
-	this.x = tank.x + Math.sin(tank.aim) *tank.w ,
-	this.y = tank.y + tank.h/2 + Math.cos(tank.aim) *tank.w;
+	this.x = 0;
+	this.y = 0;
 	this.w = 3;
 	this.h = 3;
-	this.color = tank.color;
-	this.angle = tank.aim + Math.PI;
-	this.power = tank.power;
+	this.color = "#fff";
+	this.angle = Math.PI;
+	this.power = 200;
 	this.isActive =true;
-	this.weapon = tank.weapon;
+	this.weapon = "missile";
 	this.type="bullet";
 	this.lastDrew= Math.random()/2;
+	
+
+
+	this.onExplode = false;
 
 
 	
-	this.init = function(){
-		diesel.addMixin(this, diesel.game.mixin.gravity);
-
-		//remove a bullet from teh players inventroy for shooting.
-		for(var i = 0 ;i < diesel.game.players.length;i++){
-			if(diesel.game.players[i].name == tank.player){
-				diesel.game.players[i].weapons[tank.weapon]--;
+	this.init = function(tank){
+		if(tank){
+			this.x = tank.x + Math.sin(tank.aim) *tank.w;
+			this.y = tank.y + tank.h/2 + Math.cos(tank.aim) *tank.w;
+			this.color = tank.color;
+			this.angle = tank.aim + Math.PI;
+			this.power = tank.power;
+			this.weapon = tank.weapon;
+			diesel.addMixin(this, diesel.game.mixin.gravity);
+			//remove a bullet from teh players inventroy for shooting.
+			for(var i = 0 ;i < diesel.game.players.length;i++){
+				if(diesel.game.players[i].name == tank.player){
+					diesel.game.players[i].weapons[tank.weapon]--;
+				}
 			}
 		}
+	
+	
+
+		
 	};
 
 	this.draw=function(econtext ,context){
@@ -443,6 +457,9 @@ this.effects.bullet = function(tank){
 					//trigger an explosion.
 					this.isActive= false;
 					this.x= _x, this.y=_y;
+					if(this.onExplode){
+						this.onExplode();
+					}
 					diesel.raiseEvent("explosion", this);
 					
 					break;
@@ -472,7 +489,7 @@ this.effects.bullet = function(tank){
 	};
 	
 
-	this.init();
+	this.init(tank);
 };
 this.effects.bullet.prototype = new this.objects.base();
 
@@ -499,24 +516,7 @@ this.effects.explosion = function(x,y,weapon){
 			
 			this.radius = weapon.radius||this.radius;
 
-			if(weapon.name === "Funky Bomb"){
-				if(Math.random() <.75){
-					//spawn a bullet at the center
-					var eff= new game.effects.bullet({
-						x:this.x,
-						y:this.y,
-						aim:diesel.directions.up +Math.random() *2 - 1,
-						power:100*Math.random()+25,
-						weapon:"funkyBomb",
-						w:32,
-						h:16,
-						color:"#fff"
-					});
-					console.log(eff);
-					game.level.effects.push(eff);
-				}
-
-			}
+		
 		}
 	}
 	
@@ -764,7 +764,13 @@ this.events.fire = function(evt){
 		}
 		//generate a projectile add it to the level
 		if(numbullets<=0){
-			var bullet = new diesel.game.effects.bullet(tank);
+			var bullet = null;
+			if(!diesel.game.effects.bullets[tank.weapon]){
+			 	bullet =  new diesel.game.effects.bullet(tank);
+			}
+			else{
+				bullet =  new diesel.game.effects.bullets[tank.weapon](tank);
+			}
 			
 			level.effects.push(bullet);
 
@@ -1492,7 +1498,7 @@ this.screens.buying  = function(){
 		//show the timer
 		game.context.effects.fillStyle= "#fff";
 		game.context.effects.fillText( Math.ceil(this.timer) + " seconds to the next round", 50, 50);
-		game.context.effects.fillText( "Get to buying  stuff if you need it.", 50, 75);
+		game.context.effects.fillText( "You can buy stuff now. Cool, right?", 50, 75);
 
 
 	}	
@@ -1515,21 +1521,20 @@ this.screens.buying  = function(){
 						var cost = game.weapons[msg.buy].cost;
 						if(game.players[i].cash >= cost){
 
-							console.log(msg.player.name + " bought " + msg.buy);
+							console.log(gameUpdate.player.name + " bought " + msg.buy);
 
 							//deduct the $$$
 							game.players[i].cash -= cost;
 
 							//add an item to our request
-							if(!game.players[i].weapons[item]){
-								game.players[i].weapons[item] =1;
+							if(!game.players[i].weapons[msg.buy]){
+								game.players[i].weapons[msg.buy] =1;
 							}
 							else{
-								game.players[i].weapons[item]++;
+								game.players[i].weapons[msg.buy]++;
 							}
 						}
 					}
-
 				}
 			}
 
@@ -1650,48 +1655,47 @@ this.screens.server = function(){
 		}
 
 		if(msg.dropped){
-			
-			for(var i = 0;i< game.players.length; i++){
-					
-				if(game.players[i] &&  game.players[i].name  && game.players[i].name === msg.dropped.name){
-
-					game.players.splice(i,1);
-				
-					i+=game.players.length;
-
-				}
-			}
-			
 			console.log("dropped player", msg.dropped.name);
 
-			for(var j = 0; j < game.level.tanks.length; j++){
-				if(game.level.tanks[j].player === msg.dropped.name){
-
+			for(var i = 0; game.players.length; i++){
 					
-					//insert an ai  in the slot
-					diesel.addMixin(game.level.tanks[j],new game.ai.misterStupid(), true);
-					//console.log(game.level.tanks[j].name);
-					 game.level.tanks[j].player = game.level.tanks[j].name;
+					if(game.players[i] &&  game.players[i].name  && game.players[i].name === msg.dropped.name){
 
-					// // // notifiy the players
-					var eff = new game.effects.text(msg.dropped.name+" dropped.", game.width/3,50,"#fff");
+						game.players.splice(i,1);
 					
-					 game.level.effects.push(eff);
+						i+=game.players.length;
+						
+						for(var j = 0; j < game.level.tanks.length; j++){
+							if(game.level.tanks[j].player === msg.dropped.name){
 
-					// game.level.tanks[j].health=0;
+							
+								//insert an ai  in the slot
+								diesel.addMixin(game.level.tanks[j], game.ai.misterStupid, true);
+								console.log(game.tanks[j].name);
 
-					// if(game.level.activePlayer == j){
-					// 	game.level.tanks[j].power =0;
-					// 	game.level.tanks[j].fire();
-					// }
+								// notifiy the players
+								var eff = new game.effects.text(msg.dropped.name+" dropped. Replaced with AI", game.width/3,50,"#fff");
+								game.level.effects.push(eff);
+							}
 
-					// j+=game.level.tanks.length;
-					console.log("removed tank");
+						}
+
+						
+
+					}
 				}
+			
 
-			}
 		}
-	}	
+	
+
+
+
+		
+
+
+
+	}
 
 
 };
@@ -2152,6 +2156,58 @@ this.weapons = {
 };
 
 
+///
+//	index.js
+///
+
+if(!this.effects.bullets){
+
+	this.effects.bullets  ={};
+}
+
+
+/// custom funky bomb bullet
+this.effects.bullets.funkyBomb = function(tank, pctFail){
+	
+	this.x = 0;
+	this.y = 0;
+	this.w = 3;
+	this.h = 3;
+	this.color = "#fff";
+	this.angle = Math.PI;
+	this.power = 200;
+	this.isActive =true;
+	this.weapon = "missile";
+	this.type="bullet";
+	this.lastDrew= Math.random()/2;
+	this.pctJump = pctFail||1;
+
+	
+
+
+	this.onExplode = function(){
+
+
+		if(Math.random() < this.pctJump){
+			this.pctJump = this.pctJump *.66;
+			this.isActive =true;
+			this.aim = diesel.directions.up +Math.random() *3 - 1;
+			this.power=100*Math.random()+5;
+			this.downSpeed = 0;
+				
+								
+		}
+
+			
+	};
+
+
+
+	this.init(tank);
+
+
+}
+this.effects.bullets.funkyBomb.prototype = new this.effects.bullet();
 ////
 // END
 ////

@@ -1,4 +1,4 @@
-// built at Fri Dec 5 17:58:33 2014
+// built at Tue 06 Jan 2015 01:30:01 PM EST
 ///
 //	index.js
 ///
@@ -890,6 +890,7 @@ $(document).ready(function(){
 			//send the request.
 			var msg = new client.messages.gameUpdate();
 			msg.message = {"buy":item};
+			msg.player = client.player;
 
 			client.connection.send(msg);
 
