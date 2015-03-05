@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<title>Tanks test</title>
+<meta name="viewport" content="width=720px, user-scalable=no">
+<link rel="stylesheet" href="game.css" type="text/css" media= "all"/>
+<script src="http://www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
+<script type="text/javascript" src="diesel.js"></script>
+<script type="text/javascript" src="game.js"></script>
+<script type="text/javascript">
+	diesel.events.bindEvent("DOMContentLoaded", function(){
+		game =new game();
+		game.debug=true;
+		diesel.pauseOnBlur =false;
+		diesel.start(game);
+		game.startup();
+		
+	}, document);
+
+
+</script>
+</head>
+<body>
+<div id="container">
+<canvas id="terrain"></canvas>
+	<canvas id="main"></canvas>
+	<canvas id="effects"></canvas>
+	<div id="chat"></div>
+	<div id="form"></div>
+</div>
+</body>
+</html>

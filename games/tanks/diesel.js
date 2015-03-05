@@ -1,4 +1,4 @@
-// Diesel built at Wed 20 Aug 2014 12:52:56 PM EDT
+// Diesel built at Thu 05 Mar 2015 12:30:32 PM EST
 /*
 	diesel.js
 	A simple event based js game engine 
@@ -28,7 +28,7 @@
 
 //the base diesel object must be laoded before we can load items
 var diesel = function(){
-	this.version="0.7";
+	this.version="0.7.1";
 
 	//setup slots to store components;
 	this.data ={};
@@ -82,7 +82,7 @@ var diesel = function(){
 
 	//start should not be called until the dom is loaded.
 	this.start = function(game){
-		console.log("Diesel, starting v=", this.version);
+		console.log("Diesel, starting v"+this.version);
 
 		diesel.timeStarted = new Date();
 		diesel.lastFrameEnd = new Date();
@@ -92,7 +92,7 @@ var diesel = function(){
 		diesel.util.url.read();
 
 		diesel.container = document.getElementsByTagName("body")[0];
-		diesel.events.raiseEvent("startup");
+	
 		
 		//load vars into the diesel object from core plugins
 
@@ -144,7 +144,7 @@ var diesel = function(){
 			}
 			else{
 				for( var canvas in game.context){
-					diesel.util.createContext(canvas);
+					game.context[canvas] = diesel.util.createContext(canvas, game.context[canvas]);
 				};
 			}
 
@@ -160,7 +160,8 @@ var diesel = function(){
 				diesel.events.bindEvents(game.events);
 			}
 
-			
+			diesel.events.raiseEvent("startup");
+
 			diesel.loop();
 
 		}
@@ -203,6 +204,8 @@ var diesel = function(){
 			console.log("Diesel, No Local Storage. Faking...");
 			window.localStorage = {};
 		}
+
+		//events for IE
 	};
 
 	this.init();
@@ -272,6 +275,13 @@ diesel.data.getKeyName = function(keyCode){
 	// hope this  is a letter key:)
 	return String.fromCharCode(keyCode);
 };
+
+diesel.data.directions={
+	up: Math.PI,
+	down: 0,
+	left: Math.PI/2,
+	right:Math.PI/2*3
+};
 ///
 // Diesel.events
 ///
@@ -315,22 +325,32 @@ diesel.events.bindEvents = function(eventObject){
 	// events prefixed with window will bind to the window in all cases
 	
 	for(event in eventObject){
-		if(event && typeof(eventObject[event]) == "function"){
-			if(event.indexOf("window") === 0){
-				//remove the window at the start
-				window.addEventListener(event.substring(6), 
-					eventObject[event]);
-			}
-			else{
-				
-				diesel.container.addEventListener(event, 
-					eventObject[event]);
-
-
-			}
-		}
+		diesel.events.bindEvent(event,eventObject[event]);	
 	}
 };
+
+diesel.events.bindEvent =function(eventName, functionRef, domElement){
+
+	if(!eventName && typeOf(functionRef) !="function"){
+		console.log("cannot bind ", event, functionRef)
+		return;
+	}
+
+	var fallback = !window.addEventListener;
+	var container = domElement || diesel.container|| document;
+	if(eventName.indexOf("window") === 0){
+		//remove the window at the start
+		container  = window;
+		eventName = event.substring(6)
+	}
+	
+	if(fallback){
+		container.attachEvent("on"+eventName, functionRef);
+	}
+	else{
+		container.addEventListener(eventName, functionRef, false);
+	}
+}
 
 //set the engine x vars
 diesel.events.mousemove= function(evt){
@@ -720,41 +740,41 @@ diesel.proto.game =  function(){
 	};
 	this.events={
 		"draw":function(event){
-			game.screens[game.activeScreen].draw(event.args[0]);
+			diesel.game.screens[diesel.game.activeScreen].draw(event.args[0]);
 		},
 		"update":function(event){
-			game.ticks++;
-			game.screens[game.activeScreen].update(event.args[0]);
+			diesel.game.ticks++;
+			diesel.game.screens[diesel.game.activeScreen].update(event.args[0]);
 		},
 		"click":function(evt,x,y){
-			if(game.screens[game.activeScreen] &&
-					game.screens[game.activeScreen].click){
+			if(diesel.game.screens[diesel.game.activeScreen] &&
+					diesel.game.screens[diesel.game.activeScreen].click){
 
-				game.screens[game.activeScreen].click(evt,x,y);
+				diesel.game.screens[diesel.game.activeScreen].click(evt,x,y);
 			}
 			
 		},
 		"windowkeydown": function(event){
-			for(keyname in game.keys){
-				if(event.keyCode == game.keys[keyname]){
-					game.keysDown[keyname] =true;
+			for(keyname in diesel.game.keys){
+				if(event.keyCode == diesel.game.keys[keyname]){
+					diesel.game.keysDown[keyname] =true;
 					event.preventDefault();
 				}
 			}
-			if(game.screens[game.activeScreen].keydown){
-				game.screens[game.activeScreen].keydown(event);
+			if(diesel.game.screens[diesel.game.activeScreen].keydown){
+				diesel.game.screens[diesel.game.activeScreen].keydown(event);
 			}
 				
 		},
 		"windowkeyup":function(event){
-			for(keyname in game.keys){
-				if(event.keyCode == game.keys[keyname]){
-					game.keysDown[keyname] =false;
+			for(keyname in diesel.game.keys){
+				if(event.keyCode == diesel.game.keys[keyname]){
+					diesel.game.keysDown[keyname] =false;
 					event.preventDefault();
 				}
 			}	
-			if(game.screens[game.activeScreen].keyup){
-				game.screens[game.activeScreen].keyup(event);
+			if(diesel.game.screens[diesel.game.activeScreen].keyup){
+				diesel.game.screens[diesel.game.activeScreen].keyup(event);
 			}
 		},
 		"screenChange":function(event){
@@ -763,23 +783,23 @@ diesel.proto.game =  function(){
 				transition = event.args[2]|| false;
 			console.log("screen changed",from, to, transition);
 
-			game.screens[from].close();
+			diesel.game.screens[from].close();
 			if(transition){
-				game.screens[transition].reset(from, to);
-				game.screens[transition].open();
-				game.activeScreen = transition;
+				diesel.game.screens[transition].reset(from, to);
+				diesel.game.screens[transition].open();
+				diesel.game.activeScreen = transition;
 			}
 			else{
-				game.screens[to].reset();
-				game.screens[to].open();
-				game.activeScreen = to;
+				diesel.game.screens[to].reset();
+				diesel.game.screens[to].open();
+				diesel.game.activeScreen = to;
 			}
 		
 		},
 		"startup":function(evt){
 
-			if(game.startup){
-				game.startup();
+			if(diesel.game.startup){
+				diesel.game.startup();
 				console.log("diesel, starting up the game");
 			}
 			else{
@@ -872,6 +892,7 @@ diesel.util.timeBetweenFrames= function(){
 
 
 diesel.util.getLocalCoords = function(x,y){
+	//TODO fix for scrolling/nesting
 	var rect = diesel.container.getBoundingClientRect();
 	return {
 	"x":x - rect.left - diesel.container.scrollLeft + window.pageXOffset,
@@ -904,8 +925,9 @@ diesel.util.ajax = function(url){
 	}
 };
 
-diesel.util.createContext= function(canvas){
-	canvas_el = document.getElementById(canvas)
+diesel.util.createContext= function(canvas ,value){
+	var canvas_el = document.getElementById(canvas),
+	ctx = null;
 				
 	//create it if it does not exist
 	if(!canvas_el){
@@ -913,12 +935,12 @@ diesel.util.createContext= function(canvas){
 		canvas_el.id =canvas;
 		diesel.container.appendChild(canvas_el);
 	}
-	if(game.context[canvas] !== "3d" && game.context[canvas] !== "3D"){
-		game.context[canvas] = canvas_el.getContext("2d");
+	if( value !== "3d" && value !== "3D"){
+		ctx = canvas_el.getContext("2d");
 	}	
 	else{
 		try{
-			game.context[canvas] = canvas_el.getContext("webgl");
+			ctx = canvas_el.getContext("webgl");
 		}
 		catch(e){
 			console.log("DIESEL, ERROR initializing 3d canvas"+e);
@@ -926,20 +948,25 @@ diesel.util.createContext= function(canvas){
 		}
 	}
 	//TODO preserve aspect ratio
-	canvas_el.width = game.width;
-	canvas_el.height = game.height;
+	
+	canvas_el.width = diesel.game.width;
+	canvas_el.height = diesel.game.height;
 
-	if(!game.font){
+	if(!diesel.game.font){
 		console.log("Diesel, Warning, No game.font, using defaults");
-		game.font = diesel.font;
+		diesel.game.font = diesel.font;
 	}
-	if(!game.fontSize){
+	if(!diesel.game.fontSize){
 		console.log("Diesel, Warning, No game.fontSize, using defaults");
-		game.fontSize=diesel.fontSize;
+		diesel.game.fontSize=diesel.fontSize;
 	}
-
 	//debug data to show init;
-	game.context[canvas].font = game.fontSize+"px "+game.font ;
+	ctx.font = diesel.game.fontSize+"px "+diesel.game.font ;
+	
+
+	
+
+	return ctx;
 				
 }
 
@@ -1032,11 +1059,11 @@ diesel.util.url = {
 	"host":window.location.host,
 	"path":window.location.pathname,
 	"read":function(){
-		var equals = null, data, search =window.location.search.split('&');
+		var equals = null, data, search =window.location.search.substring(1).split('&');
 		for(var i=0 ; i < search.length;i++){
 			data= search[i];
 			equals = search[i].indexOf('=');
-			diesel.util.url.args[data.substring(0, equals)] = data.substring(equals + 1, data.substring(equals+1));
+			diesel.util.url.args[data.substring(0, equals)] = data.substring(equals + 1);
 		}
 
 	}

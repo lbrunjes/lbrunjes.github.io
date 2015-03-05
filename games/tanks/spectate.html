@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<title>Tanks test</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<link rel="stylesheet" href="game.css" type="text/css" media= "all"/>
+<script type="text/javascript" src="diesel-0.7.js.js"></script>
+<script type="text/javascript" src="game.js"></script>
+<script type="text/javascript">
+	document.addEventListener("DOMContentLoaded", function(){
+		
+		diesel.shouldLoop=true;
+		diesel.start(game);
+		game.startup();
+		
+	}, false);
+
+
+</script>
+</head>
+<body>
+<div id="container">
+<canvas id="terrain"></canvas>
+	<canvas id="main"></canvas>
+	<canvas id="effects"></canvas>
+	
+</div>
+</body>
+</html>
