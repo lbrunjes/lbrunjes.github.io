@@ -9,11 +9,10 @@
 <script type="text/javascript" src="game.js"></script>
 <script type="text/javascript">
 	diesel.events.bindEvent("DOMContentLoaded", function(){
-		game =new game();
+		game =new game("ws://tyr:9000");
 		game.debug=true;
 		diesel.pauseOnBlur =false;
 		diesel.start(game);
-		game.startup();
 		
 	}, document);
 

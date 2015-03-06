@@ -2,6 +2,7 @@ body *,body{
 margin:0;
 padding:0;
 display:block;
+background: #000;
 
 }
 a, span {
