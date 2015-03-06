@@ -9,7 +9,7 @@
 <script type="text/javascript" src="game.js"></script>
 <script type="text/javascript">
 	diesel.events.bindEvent("DOMContentLoaded", function(){
-		game =new game("ws://tyr:9000");
+		game =new game();
 		game.debug=true;
 		diesel.pauseOnBlur =false;
 		diesel.start(game);
