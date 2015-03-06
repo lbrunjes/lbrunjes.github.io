@@ -1,4 +1,4 @@
-//built at Thu 05 Mar 2015 11:28:54 PM EST
+//built at Thu 05 Mar 2015 11:45:02 PM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -2966,16 +2966,18 @@ this.sound.system= function(){
 	this.context =  null;
 	this.oscillator= null,
 	this.gain = null;
-	this.enabled = true;
+	this.enabled = false;
 
 
 	this.init = function(){
-		this.context = new window.AudioContext();
+		if(window.AudioContext){
+			this.context = new window.AudioContext();
 
-		this.oscillator = this.context.createOscillator();
-		this.oscillator.frequency.value=0;
+			this.oscillator = this.context.createOscillator();
+			this.oscillator.frequency.value=0;
 
-		this.oscillator.start(0.5);
+			this.oscillator.start(0.5);
+		}
 	}
 
 	this.startTone = function(frequency, end){
