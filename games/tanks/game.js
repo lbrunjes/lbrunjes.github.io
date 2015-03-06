@@ -1,4 +1,4 @@
-//built at Thu 05 Mar 2015 11:45:02 PM EST
+//built at Fri 06 Mar 2015 02:38:37 PM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -37,7 +37,7 @@ var game = function(messageHost, isServer){
 	this.cast = null;
 	
 	this.players =[];
-	this.maxPlayers =2;
+	this.maxPlayers =10;
 	this.localPlayer = null;
 
 	this.width=640;
@@ -80,8 +80,8 @@ var game = function(messageHost, isServer){
 		diesel.pauseOnBlur =true;
 		//TODO Pixel denisty for retina.
 
-		this.width = window.innerWidth;
-		this.height = window.innerHeight;
+		this.width = Math.max(window.innerWidth,640);
+		this.height = Math.max(window.innerHeight,480);
 		window.scrollMaxX=0;
 		window.scrollMaxY=0;
 		window.scrollbars.visible = false;
@@ -119,6 +119,12 @@ var game = function(messageHost, isServer){
 		diesel.registerKey("space",32);
 		diesel.registerKey("tab",9)
 		diesel.registerKey("backslash", 220);
+
+		// if(window.location.hash && game.ws.readyState ==1){
+		// 	console.log(window.location.hash);
+
+		// 	game.ws.send(new game.messages.joinGame(gameid));
+		// }
 
 
 	}
@@ -386,8 +392,8 @@ this.effects.bullet = function(tank){
 
 	this.x = 0;
 	this.y = 0;
-	this.w = 3;
-	this.h = 3;
+	this.w = 2;
+	this.h = 2;
 	this.color = "#fff";
 	this.angle = Math.PI;
 	this.power = 200;
@@ -428,6 +434,10 @@ this.effects.bullet = function(tank){
 			this.vert = Math.cos(this.angle)*this.power * -1;
 			this.sy  = this.y;
 			this.sx =this.x;
+			while(game.level.scaleX < 1/this.w){
+				this.w++;
+				this.h++;
+			}
 
 		}
 	
@@ -444,21 +454,23 @@ this.effects.bullet = function(tank){
 				econtext.rotate(Math.PI/4);
 				econtext.fillStyle = this.color;
 
-				econtext.fillRect(-1, -1,2,2);
+				econtext.fillRect(this.w/-2, this.h/-2,this.w,this.h);
 
 			econtext.restore();
 		}
 
 		context.fillStyle ="#fff";
-		context.fillRect(this.x-1,this.y-1,3,3);
-		//TODO bullets can be too small to see at high res server and low res clients
-
+		context.fillRect(-this.w, -this.h,this.w*2,this.h*2);
+	
 	
 	}
 	this.update=function(ticks){
 		this.t +=ticks;
 		this.lastDrew+=ticks;
 		if(this.isActive){
+			
+
+
 
 			var oldx = this.x, 
 			oldy=this.y,
@@ -860,6 +872,88 @@ this.events.miss = function(evt){
 
 };
 
+///
+//	game.events.mousemove
+///
+//used to allow swiping
+
+this.events.mousemove=function(e){
+	if( game.screens[game.activeScreen].mousemove){
+		game.screens[game.activeScreen].mousemove(e);
+	}
+};
+
+this.events.mousedown=function(e){
+	game.mouseDown =true
+	if( game.screens[game.activeScreen].mousedown){
+		game.screens[game.activeScreen].mousedown(e);
+	}
+};
+
+this.events.mouseup=function(e){
+	game.mouseDown =false
+	if( game.screens[game.activeScreen].mouseup){
+		game.screens[game.activeScreen].mouseup(e);
+	}
+};
+///
+//	game.events.touch
+///
+if(!game.touches){
+	game.touches =[];
+}
+
+this.events.touchstart=function(e){
+	
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX, e.changedTouches[i].pageY);
+		game.touches.push({ identifier: e.changedTouches[i].identifier, 
+			x: coords.x,
+			y: coords.y });
+	}
+	if( game.screens[game.activeScreen].touchstart){
+		game.screens[game.activeScreen].touchstart(e);
+		e.preventDefault();
+	}
+	
+};
+
+this.events.touchend=function(e){
+
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		for (var j =0; j <game.touches.length;j++){	
+			if(e.changedTouches[i].identifier == game.touches[j].identifier){
+				game.touches.splice(j,i);
+				return;
+			}
+		}
+	}
+	if( game.screens[game.activeScreen].touchend){
+		game.screens[game.activeScreen].touchend(e);
+		e.preventDefault();
+	}
+
+	
+
+};
+
+this.events.touchmove=function(e){
+
+	for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX,
+		 e.changedTouches[i].pageY);
+	}
+
+	if( game.screens[game.activeScreen].touchmove){
+		game.screens[game.activeScreen].touchmove(e);
+		e.preventDefault();
+	}
+
+};
+
+// game.events.touchleave=function(e){
+// 	game.events.touchend(e);
+// };
 this.events.windowresize =function(){
 		if(game){
 			game.width = Math.max(window.innerWidth,640);
@@ -981,6 +1075,10 @@ this.messages.gameList.prototype = this.messages.serverCommand;
 this.messages.command_okay = function(){
 	this.process = function(data){
 		game.chat.addMessage(data);
+		
+		if(data.createdGame){
+			this.networkGame =data.createdGame;
+		}
 	}
 }
 this.messages.command_okay.prototype = this.messages.serverCommand;
@@ -1030,6 +1128,7 @@ this.messages.join = function(){
 			game.networkGame = data.game;
 			var msg = new game.messages.gameInfo(data.game);
 			game.ws.send(JSON.stringify(msg));
+			//window.location.hash = data.game;
 		}
 
 		while(game.colors.length < game.players.length +1){
@@ -1474,18 +1573,21 @@ this.objects.chat = function(){
 	this.addMessage=function(message){
 
 		if(typeof(message) == "string"){
-			message = {"message":message};
+			message = {"message":message, player:"system"};
 		}
 
 		for(var key in message){
 			message[key] = this.escapeText(message[key]);
 		}
+		if(!message.player){
+			message.player = "system";
+		}
 
 		this.messages.push(message)
 
-
-		console.log.apply(console,arguments);
-
+		if(game.debug){
+			console.log.apply(console,arguments);
+		}
 		var trimcount = this.messages.length- this.chatLength;
 		if(trimcount>0){
 			this.messages.splice(0,trimcount);
@@ -1494,19 +1596,21 @@ this.objects.chat = function(){
 		if(message.player && message.message){
 			//get teh player 
 			var p = null;
-			for(var i=0; i < game.level.tanks.length;i++){
-				if(game.level.tanks[i].player == message.player){
-					var text = new game.effects.text(message.message,game.level.tanks[i].x,
-						game.level.tanks[i].y+game.fontSize, game.level.tanks[i].color);
-					text.align ="center";
-					text.angle = game.directions.up;
-					text.speed = game.fontSize *1.5;
-					text.ttl = Math.min(message.message.length *.5, 5);
-					text.scalePerTick = 0.05;
-					console.log(text);
-					game.level.effects.push(text);
-				}
+			if(game.level){
+				for(var i=0; i < game.level.tanks.length;i++){
+					if(game.level.tanks[i].player == message.player){
+						var text = new game.effects.text(message.message,game.level.tanks[i].x,
+							game.level.tanks[i].y+ game.fontSize*2, game.level.tanks[i].color);
+						text.align ="center";
+						text.angle = game.directions.up;
+						text.speed = game.fontSize *1.5;
+						text.ttl = Math.min(message.message.length *.5, 5);
+						text.scalePerTick = 0.05;
+						console.log(text);
+						game.level.effects.push(text);
+					}
 
+				}
 			}
 
 			
@@ -1531,7 +1635,20 @@ this.objects.chat = function(){
 		this.htmlviewshowing = false;
 	}
 	this.draw= function(context,x,y,w,h){
-		
+		context.save();
+		context.translate(x, y);
+
+		var line = game.fontSize 
+		for (var i =1; i *line < h &&  i < this.messages.length; i ++){
+			var m =this.messages[this.messages.length -i];
+			if(m.player != "system"){
+				context.fillText(m.player+":"+m.message, game.fontSize, i *line);
+			}
+			else{
+			context.fillText(m.message, game.fontSize, i *line);	
+			}
+		}
+		context.restore();
 	}
 
 
@@ -1713,9 +1830,9 @@ this.objects.level = function(players){
 	this.generateTerrain = function(){
 		
 		while(this.terrain.length < 6 || Math.random() < .5){
-			this.terrain.push(Math.round(Math.random() * this.h/3*2 + this.h/3));
-			this.terrain.push(Math.round(Math.random() * this.h/3*2 + this.h/3));
-			this.terrain.push(Math.round(Math.random() * this.h/3*2 + this.h/3));
+			this.terrain.push(Math.round(Math.random() * this.h/2 + this.h/4));
+			this.terrain.push(Math.round(Math.random() * this.h/2 + this.h/4));
+			this.terrain.push(Math.round(Math.random() * this.h/2 + this.h/4));
 		}
 		this.terrainScale = this.w/(this.terrain.length -1);
 
@@ -1734,7 +1851,6 @@ this.objects.level = function(players){
 				step/2, game.width-step/2);
 	
 			var t = new game.objects.tank(x, 16, this.players[i]);
-			console.log(t, t.toJSON())
 			this.tanks.push(t);
 	
 		}
@@ -2006,7 +2122,7 @@ this.objects.level.prototype = new this.objects.base();
 ///
 
 this.objects.player = function(name, color){
-	this.name= name|| "fred" + Math.random()*1000;
+	this.name= name|| "INTERNETGuy #" + Math.floor(Math.random()*1000);
 	this.color = color||"#"+Math.floor(Math.random()*0x999 + 0x666).toString(16);
 	
 	this.cash =100;
@@ -2270,6 +2386,7 @@ this.screens.attract  = function(){
 			click:function(e){
 				var gamename = prompt("What should your game be called?", game.localPlayer.name+"'s Game");
 				if(gamename){
+
 					game.ws.send(new game.messages.createGame(gamename));
 					diesel.raiseEvent("screenChange", "attract", "setup");
 				}
@@ -2283,6 +2400,9 @@ this.screens.attract  = function(){
 			click:function(e){
 				var name = prompt("What shall we call you?", game.localPlayer.name) || game.name;
 				if(name){
+					if(name.length > 16){
+						name = name.substring(0,16);
+					}
 					game.localPlayer.name = name;
 					diesel.events.save("player",game.localPlayer);
 				}
@@ -2327,8 +2447,7 @@ this.screens.attract  = function(){
 	}
 
 	this.draw= function(){
-		//TODO ADD list refresh + click to join to attract screen
-
+		
 		var main = game.context.main;
 		main.fillStyle ="#000";
 		main.fillRect(0,0,game.width,game.height);
@@ -2394,6 +2513,8 @@ this.screens.endGame = function(){
 		w:256,
 		h:64,
 		click:function(e){
+			var msg= game.messages.part();
+			game.ws.send(msg);
 			diesel.raiseEvent("screenChange", "endGame","attract");
 		}
 	},
@@ -2404,7 +2525,7 @@ this.screens.endGame = function(){
 		w:256,
 		h:64,
 		click:function(e){
-			diesel.raiseEvent("screenChange", "endGame","attract");
+			diesel.raiseEvent("screenChange", "endGame","setup");
 		}
 	}
 	]
@@ -2572,7 +2693,19 @@ this.screens.inGame = function(){
 	// the screen that player see while in game
 	this.controlsH = game.fontSize *2;
 	this.controlsY = -1 * this.controlsH;
-
+	this.touchAim = true;
+	this.mousemove =function(e){
+		if(e.which){
+			this.click(e);
+		}
+	};
+	this.touchmove =function(e){
+		for(var i = 0; i < e.changedTouches.length;i++ ){
+		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX,
+		 e.changedTouches[i].pageY);
+		this.clickZones[1].click(null,coords.x, coords.y);
+		}	
+	};
 	this.clickZones = [
 		{
 			x: 0,
@@ -2587,6 +2720,54 @@ this.screens.inGame = function(){
 						var msg = JSON.stringify(new game.messages.chat(text));
 						game.ws.send(msg);
 					}
+				}
+			}
+		},
+		{
+			x:0,
+			y: window.innerHeight -256,
+			w: window.innerWidth,
+			h: 256,
+			click:function(e , x ,y ){
+				var center = game.width/2;
+				var tank = null;
+				x= x ||diesel.mouseX;
+				y= y  ||diesel.mouseY;
+
+				for(var i = 0 ; i < game.level.tanks.length;i++){
+					if(game.level.tanks[i].player == game.localPlayer.name){
+						tank = game.level.tanks[i];
+						break;
+					}
+				}
+				if(y> game.height -64 ){
+					//Test for  buttons
+					if(x > center -192 &&x < center -64){
+						game.screens.inGame.touchAim =true;
+					}
+					if(x < center + 192 && x > center  + 64){
+						game.screens.inGame.touchAim =false;
+					}
+					if(x < center + 64 && x > center  - 64){
+						tank.fire();
+					}
+
+
+				}
+				else{
+					x =x - center;
+					y = y - (game.height -64);
+					var dist = Math.sqrt(Math.pow(x,2) +Math.pow(y,2));
+					if(dist < 256){
+						var angle = Math.atan2(-x,-y) ;
+						if(dist>128){
+							tank.aim = game.directions.left  + angle+ Math.PI/2;
+						}
+						else{
+							tank.power = Math.round((angle+Math.PI/2)/Math.PI *1000);
+						}
+					}
+
 				}
 			}
 		}
@@ -2626,7 +2807,8 @@ this.screens.inGame = function(){
 		//get the players tank and draw controls if it exists.
 		for(var i = 0 ; i < game.level.tanks.length;i++){
 			if(game.level.tanks[i].player == game.localPlayer.name){
-				this.drawControls(game.context.main, game.level.tanks[i],0, this.controlsY)
+				this.drawControls(game.context.main, game.level.tanks[i],0, this.controlsY);
+				this.drawTouchControls(game.context.main, game.level.tanks[i]);
 			}
 		}
 		
@@ -2636,6 +2818,9 @@ this.screens.inGame = function(){
 		game.connections.webSocket.processMessageQueue();
 
 		game.level.update(ticks);
+
+		this.clickZones[1].y=game.height -256;
+		this.clickZones[1].w= game.width;
 
 		this.controlsH = game.fontSize *2;
 		
@@ -2711,7 +2896,7 @@ this.screens.inGame = function(){
 		context.strokeRect(0,0,game.level.w,this.controlsH);
 		//draw INFO
 		context.fillText("POW:"+ tank.power,  game.fontSize , game.fontSize * 1.5);
-		context.fillText("AIM:"+ Math.round(diesel.degrees(tank.aim)-90), game.fontSize *8 , game.fontSize *1.5);
+		context.fillText("AIM:"+ Math.round(diesel.degrees(tank.aim)-180), game.fontSize *8 , game.fontSize *1.5);
 		context.fillText("HTH:"+ Math.round(tank.health), game.fontSize *16 , game.fontSize * 1.5);
 
 		if(game.level.tanks[game.level.activePlayer].player  ==game.localPlayer.name){
@@ -2740,13 +2925,76 @@ this.screens.inGame = function(){
 
 		// }
 
+		context.restore();
+
+	};
+	this.drawTouchControls = function(context ,tank){
+		///.Touch controls
+		context.save();
+		context.translate(game.width/2, game.height - 64);
+		context.textAlign = "center";
+		//fire button
+		
+		context.fillStyle = "#fff";
+		context.fillText("FIRE",0, game.fontSize*1.5)
+
+		//aim/power buttons
+		context.fillStyle = tank.color;
+		context.strokeStyle = tank.color;
+		if(this.touchAim){
+			context.fillRect(-192, 0, 128, 64);	
+			context.lineWidth =64;
+			context.beginPath();
+			context.arc(0,0,160, Math.PI/2 - tank.aim , -Math.PI ,true);
+			context.stroke();
+			context.strokeStyle = "rgba(255,255,255, 0.5)";
+			context.beginPath();
+			context.arc(0,0,96,0, Math.PI * (tank.power/-1000),true);
+			context.stroke();
+		}
+		else{
+			//power
+			context.fillRect(64, 0, 128, 64);	
+			context.lineWidth =64;
+			context.beginPath();
+			context.arc(0,0,96,0, Math.PI * (tank.power/-1000),true);
+			context.stroke();
+			context.strokeStyle = "rgba(255,255,255, 0.5)";
+			context.beginPath();
+			context.arc(0,0,160, Math.PI/2 - tank.aim , -Math.PI ,true);
+			context.stroke();
+
+		}
+
+		context.lineWidth = 1
+		context.strokeStyle = "#fff";
+		context.fillStyle = "#fff";
+		context.strokeRect(-192, 0, 128, 64);
+		context.fillText("AIM",-128, game.fontSize*1.5)
+
+		context.strokeRect(64, 0, 128, 64);
+		context.fillText("POWER",128, game.fontSize*1.5)
+
+		context.strokeStyle = "#fff";
+
+		context.beginPath();
+
+		context.arc(0,0,64,0, Math.PI,true);
+		context.arc(0,0,128,0, Math.PI,true);
+		context.arc(0,0,192,0, Math.PI,true);
+		context.stroke();
+
+		tank.draw(context, true, false);
 
 		context.restore();
+
 
 		}
 
 
 }
+
+
 this.screens.inGame.prototype = new diesel.proto.screen();
 this.screens.inGame = new this.screens.inGame();
 
@@ -2815,30 +3063,28 @@ this.screens.setup  = function(){
 	this.addressOfClient = "lbrunjes.github.io/games/tanks";
 
 	this.clickZones=[
-	{x:20,y:240,w:640,h:320,
+	{x:20,y:240,w:640,h:384,
 		click:function(e){
 			//the users box.
+			var text = prompt("chat");
+				if(text){
+					var msg = JSON.stringify(new game.messages.chat(text));
+					game.ws.send(msg);
+				}
 	}},
-	{x:20,y:600,w:640,h:240,
+	{x:20,y:100,w:640,h:69,
 		click:function(e){
 			//Theseetings box
 			if(game.isServer){
 				diesel.raiseEvent("screenChange","setup","inGame", null);
 			}
 		
-	}},
+	}}
 	];
 	this.reset = function(){
 		game.context.effects.clearRect(0,0,game.width, game.height);
+
 	}
-
-	this.open =function(){
-	}
-	this.close = function(){
-
-	}	
-	
-
 
 	this.draw= function(){
 		var main = game.context.main;
@@ -2846,40 +3092,32 @@ this.screens.setup  = function(){
 		main.fillStyle= "#000";
 		main.fillRect(0,0, game.width, game.height);
 
-		main.fillStyle= "#fff";
-
-		//Header
-		main.fillText("Diesel TANKS!!!", 25,25);
-		
-		
-		if(game.debug){
-			main.fillText("web Socket...", 25,50);
-			if(game.ws.readyState ===1 ){
-				main.fillStyle= "#0f0";
-			}
-			else{
-				main.fillStyle= "#f00";
-			}
-			main.fillText(game.connections.webSocket.states[game.ws.readyState] || "?!", 300,50);
+		main.fillStyle= "#f00";
+		if(game.ws.readyState == 1 ){
+			main.fillStyle= "#0f0";
 		}
-	
+		
+		main.fillText("o", game.fontSize, game.fontSize);
 		main.fillStyle= "#fff";
+		main.fillText(game.connections.webSocket.states[game.ws.readyState], game.fontSize *2, game.fontSize);
+	
+	
+		
 		if(game.networkGame){
-			
-			main.fillText("Go here to play: "+this.addressOfClient, 25, 100);		
-			main.fillText("Game Code:"+ game.networkGame, 25, 140);
+			main.fillText("Game Code:"+ game.networkGame, game.fontSize,  game.fontSize *3);
 		}
 		else{
-			main.fillText("not conntected", 25, 100);		
+			main.fillText("not conntected", game.fontSize, game.fontSize *3);		
 		}
 		
 
 		//show connected players with color
-		this.drawPlayers(main, 20,240,640,320);
+		this.drawPlayers(main, 20,240,640,game.height - 240);
 
 		//drawSettings
+		this.drawSetings (main, 20, 100,640,96);
 
-		this.drawSetings (main, 20, 600,640,240);
+
 	};
 	this.drawSetings = function(context,x,y,w,h){
 		context.save();
@@ -2889,16 +3127,15 @@ this.screens.setup  = function(){
 		context.strokeStyle = "#fff";
 		context.strokeRect(0,0,w,h);
 		context.fillStyle ="#fff";
-		context.fillText("Settings" ,
-			game.fontSize,game.fontSize);
+		
 		
 
 		if(!game.isServer){
+			context.fillText("Settings" ,game.fontSize,game.fontSize);
 			context.fillText("Rounds:"+ game.maxRounds||"?", game.fontSize,game.fontSize*3);
 			context.fillText("Weapons:"+ game.maxRounds||"?", game.fontSize,game.fontSize*4);
 		}
 		else{
-			context.fillStyle = "#fff";
 			context.fillText("start", w/4, h/4);
 		}
 		context.restore();
@@ -2913,20 +3150,11 @@ this.screens.setup  = function(){
 		context.strokeRect(0,0,w,h);
 
 		context.fillStyle ="#fff";
-		context.fillText("Connected Players ("+game.players.length+"/"+game.maxPlayers+")" ,
-			game.fontSize,game.fontSize);
-		context.save();
-		context.translate(game.fontSize, game.fontSize*3);
-		for(var i = 0 ; i<game.players.length;i++){
-			context.fillStyle ="#fff";
-		
-			context.fillText(game.players[i].name, 25,  25*i);			
-			context.fillStyle = game.players[i].color || "#fff";
-			context.fillRect( 0, 25*i -25, 25,25);	
-			
-		}
+		context.fillText("Chat:  Connected Players ("+game.players.length+"/"+game.maxPlayers+")" ,
+		game.fontSize,game.fontSize);
+		game.chat.draw(context, 0, game.fontSize*2, w, h - game.fontSize*2);
 		context.restore();
-		context.restore();
+
 	}
 
 	this.draw
@@ -2940,13 +3168,18 @@ this.screens.setup  = function(){
 	};
 
 	this.handleError =function(error){
-
+		alert(error.message);
 		switch(error.message){
 			case "Already in the game, change your name?":
 				diesel.raiseEvent("screenChange", "setup","attract");
 			break
-			default:
+			case "no such game":
+				diesel.raiseEvent("screenChange", "setup","attract");
 			break;
+			default:
+				
+			break;
+
 		}
 
 	}
