@@ -1,4 +1,4 @@
-//built at Thu 05 Mar 2015 10:54:59 PM EST
+//built at Thu 05 Mar 2015 11:28:54 PM EST
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -671,6 +671,7 @@ this.effects.text = function(text,x,y,color,fontDetails){
 	this.angle = 0;
 	this.scale = 1;
 	this.scalePerTick = 0;
+	this.r = 0;
 
 	this.init = function(){
 
@@ -686,6 +687,7 @@ this.effects.text = function(text,x,y,color,fontDetails){
 			context.textAlign = this.align;
 			context.save();
 			context.translate(this.x, this.y);
+			context.rotate(this.r);
 			context.scale(this.scale,this.scale);
 			context.fillText(this.message, 0,0);
 			context.restore();
@@ -794,10 +796,10 @@ this.events.explosion = function(evt){
 	var choices = ["Bang!","Pow!","Boom!", "Crunch!", "Paff!","pop!","Explode.", "!!!!","Kapow.", "BLAM", "Kablooie"];
 	var text = new game.effects.text( choices[Math.floor(Math.random() * choices.length)],
 		bullet.x, bullet.y, "#fff");
-	text.scalePerTick = 0.1;
+	text.scalePerTick = 0.2;
 	text.align = "center";
-	text.ttl = explosion.radius/explosion.speedModifier *2 /diesel.fps() +0.1;
-
+	text.ttl = explosion.radius/explosion.speedModifier *2 /diesel.fps() +0.2;
+	text.r  = Math.random()-.5;
 	game.level.effects.push(text);
 	if(game.isServer){
 		var msg = JSON.stringify(new game.messages.explosion(bullet.x,bullet.y, bullet.weapon, bullet.data));
@@ -2964,7 +2966,7 @@ this.sound.system= function(){
 	this.context =  null;
 	this.oscillator= null,
 	this.gain = null;
-	this.enabled = false;
+	this.enabled = true;
 
 
 	this.init = function(){

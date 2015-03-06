@@ -3,6 +3,7 @@ margin:0;
 padding:0;
 display:block;
 background: #000;
+color:#fff;
 
 }
 a, span {
@@ -19,6 +20,8 @@ body{
 	text-align:center;
 }
 #container{
+	min-width:640px;
+	min-height:480px;
 
 	margin:0 auto;
 }
