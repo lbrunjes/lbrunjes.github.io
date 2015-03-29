@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+<title>Mini LD - PONG!!!</title>
+<link rel="stylesheet" media="all" href="media/style.css"/>
+<script src="media/data.js"></script>
+<script src="media/game.js"></script>
+<script type="text/javascript">
+	game =new game({});
+
+game.bindEvent("DOMContentLoaded", function(){
+		game.debug=true;
+		game.start(data);
+		
+	}, document);
+</script>
+</head>
+<body>
+<div id="container">
+	<canvas id="main"></canvas>
+</div>
+	
+</body>
+</html>

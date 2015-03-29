@@ -1,0 +1,1 @@
+var data={"levels":{},"sound":{"blip":{"file":"blip.mp3"},"crash":{"file":"crash.mp3"}},"sprite":{"explosion":{"file":"explosion.png","info":{"offsetX":0,"offsetY":0,"width":64,"height":64,"expects":8,"perLine":4,"lines":4},"animations":{"default":[0,1,2,3],"mushroom":[4,5,6,7]}}},"units":{}};
