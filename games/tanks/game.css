@@ -24,6 +24,8 @@ body{
 	min-height:480px;
 
 	margin:0 auto;
+	padding:0;
+	background-size:100% 100%;
 }
 
 head, script,.hide{
@@ -44,9 +46,45 @@ canvas,video, #container *{
 	-moz-user-select: none;
 	-webkit-user-select: none;
 	-ms-user-select: none;
+	text-align:center;
 }
 #container * *{
-	position: relative;;
+	position: relative;
+	font-size: 16px;
+}
+#container #terrain{
+	display:block;
+}
+#container div, #container form{
+	background:transparent;
+	background:rgba(0,0,0,0.5);
+	color:#fff;
+	width:256px;
+	padding:1em 0;
+	
+	
+}
+#container form div{
+	padding:0;
+	text-align:center;
+}
+#container input{
+	width:90%;
+	border:1px solid #fff;
+	color:#fff;
+	background: #333;
+	background: rgba(63,64,64, 0.75);
+	display:inline-block;
+	padding:0.5ex;
+
+}
+#container a[href="#close"]{
+	text-decoration: none;
+	position:absolute;
+	top:0px;
+	left:0px;
+	background:#f00;
+	color:#000;
 }
 .shown{
 	display:block!important;
@@ -56,34 +94,39 @@ canvas,video, #container *{
 	
 	width:1ex;
 	overflow:hidden;
+	display:none!important;
 }
 
 #chat{
-	color:#fff;
-	background:#333;
-	border:1px solid #eee;
 	position: relative;
 	position: absolute;
+	border:1px solid #eee;
 	top:10%;
-	left:0;
-	display:none;
-	width: 25%;
-	min-height:50%;
-	max-height:79%;
-	overflow:scroll-y;
+	right:0px;
+	display: none;
 }
-#form{
-	color:#fff;
-	background:#333;
-	border:1px solid #eee;
+#gameSetup{
 	position: relative;
 	position: absolute;
+	border:1px solid #eee;
 	top:10%;
-	right:0;
-	display:none;
-	width: 25%;
-	min-height:50%;
-	max-height:79%;
-	overflow:scroll-y;	
+	left:0px;
+	display: none;
+}
+#playerSetup{
+	position: relative;
+	position: absolute;
+	border:1px solid #eee;
+	top:10%;
+	right:0px;
+	display: none;
+}
+#chatbox{
+	position: relative;
+	position: absolute;
+	border:1px solid #eee;
+	top:10%;
+	right:0px;
+	display: none;
 }
 

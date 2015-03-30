@@ -1,4 +1,4 @@
-//built at Fri 06 Mar 2015 02:38:37 PM EST
+//built at Mon 30 Mar 2015 01:20:04 PM EDT
 /*
 	DIESEL TANKS
 	a simple tank game in html5 
@@ -37,6 +37,7 @@ var game = function(messageHost, isServer){
 	this.cast = null;
 	
 	this.players =[];
+	this.ais =[];
 	this.maxPlayers =10;
 	this.localPlayer = null;
 
@@ -93,10 +94,6 @@ var game = function(messageHost, isServer){
 		
 		//this.cast = new this.connections.castApi();
 
-		this.chat = new this.objects.chat();
-		this.form = new this.objects.form();
-
-		this.sound.instance = new this.sound.system();
 
 
 		
@@ -108,6 +105,10 @@ var game = function(messageHost, isServer){
 		console.log("game start");
 		diesel.raiseEvent("resize");
 
+
+		
+		
+
 		this.localPlayer = new this.objects.player();
 		var player = diesel.events.load("player");
 		if(player){
@@ -115,18 +116,23 @@ var game = function(messageHost, isServer){
 			this.localPlayer.color = player.color;
 		}
 
-		diesel.registerKey("enter",13);
-		diesel.registerKey("space",32);
-		diesel.registerKey("tab",9)
-		diesel.registerKey("backslash", 220);
-
+		diesel.registerKey("ctrl",17);
+		
 		// if(window.location.hash && game.ws.readyState ==1){
 		// 	console.log(window.location.hash);
 
 		// 	game.ws.send(new game.messages.joinGame(gameid));
 		// }
 
+		this.chat = new this.objects.chat();
+		
+		this.playerSetup = new this.objects.form("playerSetup");
+		this.gameSetup = new this.objects.form("gameSetup");
 
+		this.playerSetup.setupForm({"name":game.localPlayer.name});
+		this.gameSetup.setupForm({"name":"A wild game!","rounds":3});
+
+		this.sound.instance = new this.sound.system();
 	}
 
 
@@ -434,10 +440,7 @@ this.effects.bullet = function(tank){
 			this.vert = Math.cos(this.angle)*this.power * -1;
 			this.sy  = this.y;
 			this.sx =this.x;
-			while(game.level.scaleX < 1/this.w){
-				this.w++;
-				this.h++;
-			}
+			
 
 		}
 	
@@ -452,6 +455,7 @@ this.effects.bullet = function(tank){
 			econtext.save();
 				econtext.translate(this.x,this.y);
 				econtext.rotate(Math.PI/4);
+				econtext.scale(1/game.level.scaleX, 1/game.level.scaleY);
 				econtext.fillStyle = this.color;
 
 				econtext.fillRect(this.w/-2, this.h/-2,this.w,this.h);
@@ -603,7 +607,7 @@ this.effects.explosion = function(x,y,weapon, data){
 			//draw onthe terrain as well.
 			
 			game.context.terrain.save();
-				
+				game.context.terrain.globalCompositeOperation = "destination-out";
 				game.context.terrain.fillStyle= game.level.backgroundColor;
 				game.context.terrain.beginPath();
 				game.context.terrain.arc(this.x,this.y, this.radiusNow, 0, Math.PI *2);
@@ -771,12 +775,12 @@ this.events.endLevel = function(evt){
 	//change to the next Level or the buy screen
 	effect.after = function(){
 		if(game.round >= game.maxRounds){
-			diesel.raiseEvent("screenChange", game.activeScreen, "endGame");
+			diesel.raiseEvent("screenChange", game.activeScreen, "endGame", "fadeOut");
 			var msg = new game.messages.endGame();
 		
 				game.ws.send(JSON.stringify(msg));
 		}else{
-			diesel.raiseEvent("screenChange", game.activeScreen, "buying");
+			diesel.raiseEvent("screenChange", game.activeScreen, "buying", "fadeOut");
 				//TODO send buying message, include stats
 				var msg = new game.messages.endLevel();
 		
@@ -961,6 +965,9 @@ this.events.windowresize =function(){
 
 			game.fontSize = Math.max( game.height/40, 16);
 
+			diesel.container.width =game.width;
+			diesel.container.height = game.height;
+
 			for( var ctx in game.context){
 				
 				// game.context[ctx].width =game.width;
@@ -982,6 +989,18 @@ this.events.windowresize =function(){
 			}
 		}
 	}
+
+this.events.submit =function(e){
+	
+	if(game.screens[game.activeScreen].submit){
+		game.screens[game.activeScreen].submit(e,{});
+	}
+
+	e.preventDefault();
+	return false;
+
+}
+
 ///
 //  this.messages
 ///
@@ -1128,7 +1147,7 @@ this.messages.join = function(){
 			game.networkGame = data.game;
 			var msg = new game.messages.gameInfo(data.game);
 			game.ws.send(JSON.stringify(msg));
-			//window.location.hash = data.game;
+			window.location.hash = data.game;
 		}
 
 		while(game.colors.length < game.players.length +1){
@@ -1430,6 +1449,9 @@ this.mixin.damageable= {
 		}
 		this.health -= amount;
 	//	console.log(amount, this.health);
+		if(this.power && this.power > this.health*10){
+			this.power == this.health*10;
+		}
 	},
 	"isDead":function(){
 		return this.health <=0;
@@ -1564,16 +1586,41 @@ this.objects.chat = function(){
 	this.messages=[];
 	this.chatLength = 100;
 	this.htmlviewshowing =false;
+	this.box =null;
 	
 	this.element = null;
 	this.init =function(){
 		this.element = document.getElementById("chat");
+
+		if(!this.element){
+			this.element = document.createElement("div");
+			this.element.setAttribute("id", "chat");
+			diesel.container.appendChild(this.element);
+
+			var close = document.createElement("a");
+			close.setAttribute("href","#close");
+			close.setAttribute("class","close");
+			close.innerText = "X";
+			this.element.appendChild(close);
+
+			var box = document.createElement("form");
+			box.setAttribute("id",box);
+			this.element.appendChild(box);
+
+			var messages = document.createElement("div");
+			messages.setAttribute("id","chat-messages");
+			this.element.appendChild(messages);
+		}
+
+
+		this.box = new game.objects.form("chatbox");
+		this.box.setupForm({"message":""});
 	}
 	//this supports multipl messages per call
 	this.addMessage=function(message){
 
 		if(typeof(message) == "string"){
-			message = {"message":message, player:"system"};
+			message = {"message":message};
 		}
 
 		for(var key in message){
@@ -1582,6 +1629,7 @@ this.objects.chat = function(){
 		if(!message.player){
 			message.player = "system";
 		}
+
 
 		this.messages.push(message)
 
@@ -1606,7 +1654,7 @@ this.objects.chat = function(){
 						text.speed = game.fontSize *1.5;
 						text.ttl = Math.min(message.message.length *.5, 5);
 						text.scalePerTick = 0.05;
-						console.log(text);
+						
 						game.level.effects.push(text);
 					}
 
@@ -1655,7 +1703,7 @@ this.objects.chat = function(){
 	this.setHtml= function(){
 		var html = "";
 		for(var i =0 ;i < this.messages.length;i++){
-			html = '<p class="chatmessage">'+this.messages[i]+"</p>";
+			html = '<p class="chatmessage"><span class="player">'+this.messages[i].player +"</span>"+this.messages[i].message+"</p>";
 		}
 		this.element.innerHTML = html;
 	}
@@ -1667,35 +1715,136 @@ this.objects.chat.prototype = new this.objects.htmlInterface();
 
 //form.js
 
-this.objects.form= function(){
+this.objects.form= function(ID){
 
-	this.element = document.getElementById("form");
+	this.element = null;
 	this.fields = {};
+	this.formels=[];
+	this.formClass ="tanks-form-el"
+	this.containerClass = "form-container";
 
-	this.init=function(){};
+	 var id = ID ||"form";
 
-	this.getFormData = function(){
+	this.init=function(ID){
+		this.element = document.getElementById(ID);
+
+		if(!this.element){
+			this.element = document.createElement("form");
+			this.element.setAttribute("id", ID);
+			diesel.container.appendChild(this.element);
+
+		}
+		this.element.innerText = ID;
+
+		var close = document.createElement("a");
+		close.setAttribute("href","#close");
+		close.setAttribute("class","close");
+		close.appendChild(document.createTextNode("x"));
+		this.element.appendChild(close);
+
+
+	};
+
+	this.getFormData = function(e){
+		var list =  this.element.getElementsByClassName(this.formClass);
+		
+		for(var i = 0;i<list.length; i++){
+			var name = list[i].getAttribute("name");
+			
+			var type = list[i].getAttribute("type");
+
+			var newVal = null;
+			switch(type){
+				case "number":
+					newVal = parseFloat(list[i].value)||0;
+				break;
+				case "text":
+					newVal = this.escapeText(list[i].value)||"";
+				break;
+				case "checkbox":
+					newVal =  list[i].getAttribute("checked").toLowerCase() === "checked"|| false;
+				break;
+				default:
+					console.log("invalid Type of form element", list[i]);
+				break;
+			}
+
+			console.log(name, type, newVal,list[i]);
+			if(newVal === null){
+
+			}
+			else{
+				this.fields[name] = newVal;
+			}
+		}
 
 	}
 	this.setupForm = function(json){
-		var fields = {}
+		var fields = {};
+		var container = document.createElement("div");
+		container.setAttribute("class", this.containerClass);
+		
 		for(var key in json){
-			if(typeof(json[key]) =="number"||
-				typeof(json[key]) == "string" ||
-				typeof(json[key]) == "boolean"
-				){
-				fields[key] = json[key];
-			}
-			else{
-				console.log(key ,
+
+			var el =document.createElement("input");
+			el.setAttribute("class", this.formClass);
+			el.setAttribute("name", key);
+			var lbl = document.createElement("label");
+			lbl.setAttribute("for", key);
+			lbl.innerText = key;
+			container.appendChild(lbl);
+			
+			var value =this.escapeText(json[key]);
+
+			switch(typeof(json[key])){
+			case "number":
+				fields[key] = value;
+				
+				el.setAttribute("type" , "number");
+				el.setAttribute("value", value);
+				container.appendChild(el);	
+			
+			case "boolean":
+				fields[key] = value;
+				
+				el.setAttribute("type" , "checkbox");
+				el.setAttribute("checked", value);
+				container.appendChild(el);
+			
+			case "string":
+				fields[key] = value;
+				el.setAttribute("type" ,"text");
+				el.setAttribute("value", value);
+				container.appendChild(el);
+
+			break;
+			default: 
+			console.log(key ,
 					"invalid data type for form creation",  
 					typeof(key));
+
+			break;
 			}
 		}
 
 		this.fields = fields;
 
+		var ctnr = this.element.getElementsByClassName(this.containerClass);
+		for(var  i =0; i < ctnr.length; i++){
+			this.element.removeChild(ctnr[i]);
+		}
+
+		var submit= document.createElement("input");
+		submit.setAttribute("value", "GO!");
+		submit.setAttribute("type", "submit");
+		container.appendChild(submit);
+
+		this.element.appendChild(container);
+
+
 	}
+	
+	this.init(id);
 };
 this.objects.form.prototype = new this.objects.htmlInterface();
 
@@ -1710,7 +1859,7 @@ this.objects.level = function(players){
 	this.h = game.height;
 	this.x = 0;
 	this.y = 0;
-	this.backgroundColor = "#000000";
+	this.backgroundColor = "#000";
 	this.foregroundColor = "#99aa77";
 
 	
@@ -1910,13 +2059,13 @@ this.objects.level = function(players){
 	};
 
 	this.drawTerrain = function(terrain){
+		terrain.globalCompositeOperation =  "source-over";
 		terrain.clearRect(0,0,this.w -1, this.h-1);
 		
 		
 		terrain.save();
 			terrain.scale(this.scaleX, this.scaleY);
-			terrain.fillStyle=this.backgroundColor;
-			terrain.fillRect(0,0,this.w,this.h);
+			
 			terrain.fillStyle= this.foregroundColor;
 			terrain.beginPath();
 			terrain.moveTo(0,this.terrain[0]);
@@ -1932,7 +2081,7 @@ this.objects.level = function(players){
 
 			
 		terrain.restore();
-		
+		terrain.globalCompositeOperation = "destination-out";
 	}
 	this.draw = function(context){
 		
@@ -1986,6 +2135,7 @@ this.objects.level = function(players){
 
 		};
 		var bullets =0;
+		var rmBullet = 0;
 		for(var  i = 0 ; i < this.effects.length; i++){
 			this.effects[i].update(ticks);
 
@@ -1993,14 +2143,18 @@ this.objects.level = function(players){
 			if(!this.effects[i].isActive){
 				this.effects.splice(i,1);
 				i--;
+				if(this.type=="bullet"){
+					rmBullet++;
+				}
 			}
-
-			if(this.type =="bullet"){
-				bullets++;
+			else{
+				if(this.type =="bullet"){
+					bullets++;
+				}
 			}
 		};
 
-		if(fired && bullets ==0){
+		if((rmBullet > 0 &&  bullets ==0) || (fired &&  bullets ==0)){
 			this.nextPlayer();
 		}
 	};
@@ -2355,6 +2509,99 @@ this.objects.tank.prototype = new diesel.proto.objectBase()
 if(!this.screens){
 	this.screens = {};
 }
+
+this.screens.base  = function(){
+	//used to store data for use in the click function {x:i,y:i,w:i,h:i,click:fn}
+	this.clickZones=[];
+	
+	//called to draw teh screen
+	this.draw=function(ticks){
+		
+	};
+
+	//called the update the state of the things in the scene
+	this.update=function(ticks){
+
+	};
+	
+	/*
+	
+	EVENTS START HERE
+	
+	*/
+	
+	//called when the object is clicked
+	this.click=function(evt,x,y){
+		var _x = x||diesel.mouseX,
+		_y = y||diesel.mouseY;
+
+		if(evt.target.tagName.toLowerCase() ==="canvas"){
+
+			for(i in this.clickZones){
+				if(this.clickZones[i].x < _x
+					&& this.clickZones[i].x + this.clickZones[i].w > _x 
+					&& this.clickZones[i].y < _y
+					&& this.clickZones[i].y + this.clickZones[i].h > _y){	
+						this.clickZones[i].click(evt, _x,_y);
+				}
+			}
+		}
+		else{
+			if(evt.target.tagName.toLowerCase() === "a" &&
+				evt.target.className ==="close"){
+				//	console.log(evt.target.parent)
+					evt.target.parentNode.setAttribute("class","hidden");
+			}
+		}
+	};
+
+	//this is a submit event handler
+	this.submit = function(evt, data){
+		
+
+	};
+	//called when a screen is created.
+	this.open=function(event){
+	
+	};
+	//called when  screen is closed.
+	this.close=function(event){
+	
+	};
+	//called at reset
+	this.reset = function(event){
+
+	};
+
+	//remvoes data from all canvases
+	this.clearAllContexts=function(){
+		for(canvas in diesel.game.context){
+			diesel.game.context[canvas].clearRect(0,0,
+				diesel.game.width, diesel.game.height);
+		}
+	};
+	
+	//highlights the zones in the screen
+	this.drawClickZones=function(ctx){
+		var fill = ctx.fillStyle;
+	
+		for(i in this.clickZones){
+			ctx.fillRect(this.clickZones[i].x,this.clickZones[i].y,this.clickZones[i].w,this.clickZones[i].h);
+			ctx.fillStyle = "#000000";
+			if(this.clickZones[i].h >=diesel.fontSize *2){
+			ctx.fillText(i, this.clickZones[i].x +this.clickZones[i].w/2,this.clickZones[i].y +this.clickZones[i].h/2);
+			
+			}
+			else{
+				ctx.fillText(i, this.clickZones[i].x +this.clickZones[i].w/2,this.clickZones[i].y +this.clickZones[i].h);
+			}
+			ctx.fillStyle =fill;
+		}
+	};
+
+
+};
+
 ///
 //	tread.screens.attract
 ///
@@ -2384,12 +2631,8 @@ this.screens.attract  = function(){
 			w:240,
 			h:64,
 			click:function(e){
-				var gamename = prompt("What should your game be called?", game.localPlayer.name+"'s Game");
-				if(gamename){
-
-					game.ws.send(new game.messages.createGame(gamename));
-					diesel.raiseEvent("screenChange", "attract", "setup");
-				}
+				game.gameSetup.fields.name = game.localPlayer.name +"'s game";
+				game.gameSetup.show();	
 
 		}},
 		{text: "Setup Player",
@@ -2398,14 +2641,7 @@ this.screens.attract  = function(){
 			w:240,
 			h:64,
 			click:function(e){
-				var name = prompt("What shall we call you?", game.localPlayer.name) || game.name;
-				if(name){
-					if(name.length > 16){
-						name = name.substring(0,16);
-					}
-					game.localPlayer.name = name;
-					diesel.events.save("player",game.localPlayer);
-				}
+				game.playerSetup.show();
 		}},
 		{text: "Refresh",
 			x:32,
@@ -2426,7 +2662,6 @@ this.screens.attract  = function(){
 			click: function(e){
 				var y =Math.floor((diesel.mouseY -this.y) /(game.fontSize*2));
 
-				console.log(y);
 				var key = Object.keys(game.networkGames);
 				if(key.length >= y  && key[y]){
 						game.ws.send(new game.messages.joinGame(key[y]));
@@ -2490,7 +2725,22 @@ this.screens.attract  = function(){
 
 	}	
 
-	
+	this.submit =function(e){
+		if(e.target.outerHTML.indexOf("playerSetup") >=0){
+			game.playerSetup.getFormData(e);
+			game.localPlayer.name = game.playerSetup.fields.name;
+			game.playerSetup.hide();
+		}
+		if(e.target.outerHTML.indexOf("gameSetup") >=0){
+			game.gameSetup.getFormData(e);
+			game.maxRounds = game.gameSetup.fields.rounds;
+			game.ws.send(new game.messages.createGame(game.gameSetup.fields.name));
+			diesel.raiseEvent("screenChange", "attract", "setup");
+			game.gameSetup.hide()
+		
+
+		}
+	}
 
 	
 		
@@ -2501,7 +2751,7 @@ this.screens.attract  = function(){
 
 };
 
-this.screens.attract.prototype =  new diesel.proto.screen()
+this.screens.attract.prototype =  new this.screens.base()
 this.screens.attract = new this.screens.attract();
 
 this.screens.endGame = function(){
@@ -2558,7 +2808,7 @@ this.screens.endGame = function(){
 	}
 		
 }
-this.screens.endGame.prototype =  new diesel.proto.screen()
+this.screens.endGame.prototype =  new this.screens.base()
 this.screens.endGame = new this.screens.endGame();
 
 ///
@@ -2617,7 +2867,7 @@ this.screens.endRound  = function(){
 
 };
 
-this.screens.endRound.prototype =  new diesel.proto.screen();
+this.screens.endRound.prototype =  new this.screens.base();
 this.screens.endRound = new this.screens.endRound();
 ///
 //	tread.screens.buying
@@ -2673,7 +2923,7 @@ this.screens.buying  = function(){
 			this.timer -= ticks;
 
 			if(this.timer <=0){
-				diesel.raiseEvent("screenChange", "buying","inGame");
+				diesel.raiseEvent("screenChange", "buying","inGame","fadeOut");
 			}
 		}
 	}
@@ -2683,7 +2933,7 @@ this.screens.buying  = function(){
 
 };
 
-this.screens.buying.prototype =  new diesel.proto.screen()
+this.screens.buying.prototype =  new this.screens.base()
 this.screens.buying = new this.screens.buying();
 ///
 //	game.screens.inGame
@@ -2694,12 +2944,18 @@ this.screens.inGame = function(){
 	this.controlsH = game.fontSize *2;
 	this.controlsY = -1 * this.controlsH;
 	this.touchAim = true;
-	this.mousemove =function(e){
-		if(e.which){
-			this.click(e);
-		}
-	};
+	// this.mousemove =function(e){
+	// 	if(e.which){
+	// 		this.click(e);
+	// 	}
+	// 	else{
+	// 		if(e.buttons){
+	// 			this.click(e);
+	// 		}
+	// 	}
+	// };
 	this.touchmove =function(e){
+		console.log(e);
 		for(var i = 0; i < e.changedTouches.length;i++ ){
 		var coords = diesel.util.getLocalCoords(e.changedTouches[i].pageX,
 		 e.changedTouches[i].pageY);
@@ -2715,11 +2971,7 @@ this.screens.inGame = function(){
 			click: function(){
 			
 				if(diesel.mouseX > game.width - game.fontSize *4 ){
-					var text = prompt("chat");
-					if(text){
-						var msg = JSON.stringify(new game.messages.chat(text));
-						game.ws.send(msg);
-					}
+					document.getElementById("chatbox").setAttribute("class", "shown");
 				}
 			}
 		},
@@ -2772,6 +3024,16 @@ this.screens.inGame = function(){
 			}
 		}
 	];
+
+	this.submit = function(e){
+		game.chat.box.getFormData(e);
+		if(game.chat.box.fields.message){
+			var msg = new game.messages.chat(game.chat.box.fields.message)
+			game.ws.send(msg);
+			game.chat.box.element.reset();
+			
+		}
+	}
 	
 	this.reset = function(from, to){
 	
@@ -2846,10 +3108,7 @@ this.screens.inGame = function(){
 
 		//Handle key presses for your tanks
 		if( tank && tank.adjustAim&& game.keysDown){
-			//wepaons change
-			// if(game.keysDown.backslash || game.keysDown.tab){
-			// 	tank.nextWeapon();
-			// }
+			
 			var aimDelta = .5;
 			//aim
 			if(game.keysDown.left){
@@ -2862,7 +3121,7 @@ this.screens.inGame = function(){
 
 
 			//fire
-			if(game.keysDown.space || game.keysDown.enter){
+			if(game.keysDown.ctrl){
 				tank.fire();
 			}
 			else{
@@ -2974,6 +3233,7 @@ this.screens.inGame = function(){
 
 		context.strokeRect(64, 0, 128, 64);
 		context.fillText("POWER",128, game.fontSize*1.5)
+		context.fillText(Math.round(tank.power),128, game.fontSize*2.5)
 
 		context.strokeStyle = "#fff";
 
@@ -2995,61 +3255,9 @@ this.screens.inGame = function(){
 }
 
 
-this.screens.inGame.prototype = new diesel.proto.screen();
+this.screens.inGame.prototype = new this.screens.base();
 this.screens.inGame = new this.screens.inGame();
 
-///
-//	tread.screens.server
-///
-
-//the server code.
-
-
-this.screens.server = function(){
-	this.time = 0;
-	this.round = 0;
-	this.match = null 
-	
-
-	this.reset = function(from, to){
-		game.level = new game.objects.level(game.players);
-		this.round ++;
-		this.time = 0;
-		game.level.drawTerrain(game.context.terrain);
-
-
-		var msg = JSON.stringify(new game.messages.nextLevel(game.level));
-		
-
-		
-		game.ws.send(msg);
-
-		console.log("on level screen");
-
-	};
-
-	this.draw= function(){
-
-		game.level.draw(game.context.main);
-		game.context.main.fillStyle="#fff";
-		game.context.main.fillText("#"+ game.networkGame, game.width-100, 25);
-		game.context.main.fillText(game.round+"/"+ game.maxRounds, game.width-75, 50);
-		
-	};
-
-	this.update =function(ticks){
-
-		game.connections.webSocket.processMessageQueue();
-
-		game.level.update(ticks);
-		game.screens.server.time += ticks;
-	}
-	
-
-
-};
-this.screens.server.prototype = new diesel.proto.screen()
-this.screens.server = new this.screens.server();
 ///
 //	tread.screens.setup
 ///
@@ -3066,11 +3274,7 @@ this.screens.setup  = function(){
 	{x:20,y:240,w:640,h:384,
 		click:function(e){
 			//the users box.
-			var text = prompt("chat");
-				if(text){
-					var msg = JSON.stringify(new game.messages.chat(text));
-					game.ws.send(msg);
-				}
+			document.getElementById("chatbox").setAttribute("class", "shown");
 	}},
 	{x:20,y:100,w:640,h:69,
 		click:function(e){
@@ -3083,7 +3287,7 @@ this.screens.setup  = function(){
 	];
 	this.reset = function(){
 		game.context.effects.clearRect(0,0,game.width, game.height);
-
+		game.round =0;
 	}
 
 	this.draw= function(){
@@ -3183,13 +3387,45 @@ this.screens.setup  = function(){
 		}
 
 	}
+	this.submit =function(e){
+		game.chat.box.getFormData(e);
+		if(game.chat.box.fields.message){
+			var msg = new game.messages.chat(game.chat.box.fields.message)
+			game.ws.send(msg);
+			game.chat.box.element.reset();
+			
+		}
+
+	}
 
 
 };
 
-this.screens.setup.prototype =  new diesel.proto.screen()
+this.screens.setup.prototype =  new this.screens.base()
 this.screens.setup = new this.screens.setup ();
-///
+this.screens.fadeOut =function(){
+	this.count = 10;
+	this.next = null;
+
+	this.reset =function(from, to){
+		this.count = 10;
+		this.next = to;
+	}
+	this.draw = function(){
+		game.context.effects.fillStyle="rgba(0,0,0,0.1)";
+		game.context.effects.fillRect(0,0,game.width, game.height);
+	}
+	this.update=function(){
+		this.count--;
+		if(this.count <-1 && this.next){
+			diesel.raiseEvent("screenChange", "fadeOut", this.next);
+		}
+	}
+
+	
+}
+this.screens.fadeOut.prototype = new this.screens.base();
+this.screens.fadeOut = new this.screens.fadeOut();///
 // game.sound
 ///
 // an oscillator based sound system
