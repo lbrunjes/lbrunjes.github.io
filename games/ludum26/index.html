@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<title>Evil Lunix System Admin</title>
+<style>
+
+</style>
+<script type="text/javascript" src="../processing.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script>
+var LOADING=0;
+var MENU=1;
+var CHARACTER=2;
+var GAME=3;
+var LOST=4;
+var WON=5;
+var INTRO = 6;
+var wSize=[640,480];
+var gameState=LOADING;
+var stateSwapTime= 0;
+var theticket=null;
+var firstLevel = "start";
+
+var player = {
+	draw:function(){
+		rect(0,0,10,10);
+	}
+}
+var score =0;
+
+var img={};
+
+var thelevel=null;
+
+
+
+
+
+</script>
+
+</head>
+<body>
+
+<canvas id="canvas" style="background:#555;" data-processing-sources="
+main.pjs 
+worldObject.pjs
+effect.pjs
+weapon.pjs 
+player.pjs 
+enemy.pjs 
+goal.pjs
+wall.pjs
+level.pjs
+ticket.pjs
+movie.pjs
+ "
+ ></canvas>
+ 
+ <div id="sound">
+ 	<audio src="snd/click.ogg" id="steps" loop="true"></audio>
+ 	<audio src="snd/type.ogg" id="type" loop="true"></audio>
+ 	<audio src="snd/ugh.ogg" id="ugh" ></audio>
+ </div>
+
+</body>
+</html>

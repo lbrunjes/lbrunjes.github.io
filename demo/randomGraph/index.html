@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<title>Demo: A randomly gnerated graph in processing.js</title>
+<script src="processing-1.3.6.js"></script>
+<script type="text/javascript">
+// this script simulates getting a few stocks per tick.
+ var stocks ={
+ "a":{ "values":[], "name":"Company A","max":0, "min":0},
+ "b":{"values":[], "name":"Company B","max":0, "min":0},
+ "c":{ "values":[], "name":"Company C","max":0, "min":0}
+ 
+ };
+var updateRate = 200;//in ms
+var maxRecords = 100;
+var getStocks = function(){
+
+
+	for( var key in stocks){
+		var previousVal= 3;//set starting value;
+		if(stocks[key].values.length>0){
+			previousVal =stocks[key].values[stocks[key].values.length-1];
+		}
+		var thisVal = previousVal+ Math.random() - .5// 50% chance of up vs down.
+		
+		stocks[key].values.push(thisVal);
+		
+		if(thisVal > stocks[key].max){
+			stocks[key].max = thisVal;
+		}
+		
+		if(thisVal > stocks[key].min){
+			stocks[key].min = thisVal;
+		}
+		
+		if(stocks[key].values.length>= maxRecords){
+			stocks[key].values.splice(0,1);
+		}
+	}
+};
+getStocks();
+getStocks();
+var interval= setInterval(getStocks,updateRate);
+
+</script>
+<style>
+ body{
+ text-align:center;
+ }
+ canvas{
+ border:1px solid #eee;
+ }
+</style>
+</head>
+<body>
+	<h1>A stock demo</h1>
+	<p>This demo adds a random number to each stock each tick. and then draw the history using processing.js</p>
+	<p>This simulates using a json service and storing the results in a variable and using processing to graph them</p>
+	
+	<canvas data-processing-sources="demo.pjs"></canvas>
+	
+	<p style="font-size:small">2012  using processing.js version 1.3.6</p>
+</body>
+</html>

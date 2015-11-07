@@ -1,0 +1,39 @@
+TODO
+
+COMMMIT STUFF TO GIT DUDE!
+
+
+BORKES:
+I should setup diesel to simply generate events instead of reading the game objects. that way the game object can do whatever it wants.
+	this si outside project scope but it would be neat to rewrite diesel to simple generate events.
+
+	
+ADD:
+	Items
+		picku with use
+		have teh player start witha weapon
+		dis allow picking up items that the player already has.
+	Shops
+	
+	
+	Combat
+		give the player a weapon and a way to attack
+		this is going to require an inventory
+	add Witches
+		need a curse weapons thet they leave laying around.
+	
+	add Some sort of food item
+		buns and dumplings prime candidates
+	
+	at a neutral mob
+		bears or cows or something
+		ignores teh palyer unless attacked.
+	
+		
+	movement needs to be less stupid feeling.(eh)
+		probably simply let teh player moe and flag a number of player moves to allow before the enemy can move.
+		this seems better with the new solid frame rate;
+
+	Shold probably write grunt tests/set up but god I hate grunt projects
+	
+	

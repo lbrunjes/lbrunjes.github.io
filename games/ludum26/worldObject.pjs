@@ -1,0 +1,105 @@
+/*
+
+
+
+
+*/
+
+class worldObject{
+	int x =0;
+	int y =0;
+	int w =32;
+	int h =32;
+	float r =0;
+	float speed=0;
+	int f = color(0,255,0);
+	int s = color(0,128,0);
+	boolean collides=false;
+	boolean blocks=false;
+	boolean friendly=false;
+	boolean remove =false;
+	PImage tile = false;
+	
+	
+	public worldObject(int _x, int _y)
+	{
+		x = _x;
+		y=_y;
+	}
+	
+	public void draw(){
+		fill(f);
+		stroke(s);
+		pushMatrix();
+			translate(x,y);
+			rotate(r);
+			rectMode(CENTER);
+			if(!tile){
+				rect(0,0,w,h);
+			}
+			else{
+				image(tile,w/-2,h/-2,w,h);
+			}
+		popMatrix();
+	}
+	
+	public void update(float deltaTime)
+	{
+		if(speed !=0){
+			move(deltaTime);
+		}
+		
+		if(x > player.x + width/2 + w || 
+			x < player.x - width/2 - w ||
+			y < player.y - height/2 - h ||
+			y > player.y + height/2 + w)
+			{
+				remove=true;
+			}
+	}
+	
+	public void move(float deltaTime)
+	{
+		float _x = cos(r) * speed * deltaTime;
+		float _y = sin(r) * speed * deltaTime;
+		
+		if(canMove(_x+x,y+_y, this))
+		{
+			x += _x;
+			y += _y;
+		}
+	}
+	
+	public bool collide(worldObject o){
+	//	console.log("collide",o,this, abs(x - o.x) <= w/2+o.w/2,abs(y-o.y) <= h/2 + o.h/2);
+		if(	!this.collides || 
+			!o.collides ||
+			o.friendly == this.friendly){
+				return false;
+			}
+			
+		
+		return inside(o.x,o.y, o);
+	}
+	public bool inside(int _x , int _y, worldObject o){
+		if(	abs(x - _x) < w/2 + o.w/2 &&
+			 	abs(y - _y) < h/2 + o.h/2){
+			this.remove =true;
+			o.remove=true;
+			return true;
+		}
+		return false
+	}
+	
+	public float distSq(int _x, int _y){
+	
+		float dist = pow(x - _x, 2) + pow(y- _y,2);
+		
+		return dist;
+	}
+	
+	public void onRemove(){
+		console.log("removed");
+	}
+
+}

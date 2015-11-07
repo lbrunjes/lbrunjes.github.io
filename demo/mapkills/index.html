@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+<style>
+
+</style>
+<script type="text/javascript" src="processing.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="data.js"></script>
+<script>
+
+
+//$.getJSON("http://ns2stats.org/api/getdeathsformapandbuildjson?callback=?&build="+build+"&mapName="+mapname+"&offset="+offset, 
+$.get("tmp.js",
+function(json){
+//console.log("loaded"+json);
+	json = JSON.parse(json);
+	data = data.concat(json);
+	
+	for(var i = 0; i < json.length;i++){
+		for(var type in  level.min){
+			if(parseFloat(json[i]['target_'+type]) < level.min[type]){
+				level.min[type] = parseFloat(json[i]['target_'+type]);
+			}
+		}
+		for(var type in  level.max){
+			if(parseFloat(json[i]['target_'+type]) > level.max[type]){
+				level.max[type] = parseFloat(json[i]['target_'+type]);
+			}
+		}
+		
+	}
+	
+	//center 
+	 level.center.x = (level.min.x + level.max.x)/2;
+	 level.center.y = (level.min.y + level.max.y)/2;
+	 level.center.z = (level.min.z + level.max.z)/2;
+	//scale 
+	 level.scale.x = windowSize/(level.max.x - level.min.x);
+	 level.scale.y = windowSize/(level.max.y - level.min.y);
+	 level.scale.z = windowSize/(level.max.z - level.min.z);
+	 
+	 level.scale.out = level.scale.x;
+	 if(level.scale.out > level.scale.y)
+		{level.scale.out = level.scale.y}
+	 if(level.scale.out > level.scale.z)
+		{level.scale.out = level.scale.z}
+		
+	//camera
+	level.cam.x = level.max.x
+	level.cam.y = level.max.y - 768;
+	level.cam.z = level.max.z
+	 
+	
+});
+
+
+</script>
+<script type="text/processing" data-processing-target="canvas">
+
+PImage minimap = loadImage(mapname+".png");
+
+var strokes =[color(255,255,255,64), color(0,0,255,64),color(0,255,0,64) ];
+
+void setup(){
+ size(windowSize,windowSize,OPENGL);
+ background(0);
+ fill(255);
+ text("loading", width/2,height/2);
+}
+void draw(){
+	background(0);
+
+	
+	camera(
+		level.cam.x,
+		level.cam.y,
+		level.cam.z,
+		level.center.x,
+		level.center.y, 
+		level.center.z,
+		0,1,0
+	);
+
+	ambientLight(255,255,255)
+	
+	
+	scale(level.scale.out,1,level.scale.out);
+	
+	noStroke();
+	beginShape();
+		if(minimap!=null){
+			texture(minimap);
+		}
+		vertex(level.min.x, level.max.y, level.min.z, 0,0);
+		vertex(level.min.x, level.max.y, level.max.z, 0,1024);
+		vertex(level.max.x, level.max.y, level.max.z, 1024,1024);
+		vertex(level.max.x, level.max.y, level.min.z, 1024,0);
+	
+	endShape();
+	
+	
+	
+	for(int i =0; i < data.length; i++){
+		drawDataPoint(data[i]);
+	}
+
+}
+void mouseDragged(){
+	double sensX = TWO_PI/width;
+	
+	var dMX = mouseLastX - mouseX;
+	var dMY = mouseLastY - mouseY;
+	
+	mouseLastY = mouseY;
+	mouseLastX = mouseX;
+	
+	rotX  = (rotX + dMX * sensX) % TWO_PI;
+	
+	//console.log(rotX);
+	
+	level.cam.y += dMY/5;
+	
+	level.cam.x = sin(rotX) * (level.max.x + level.max.z);
+	level.cam.z = cos(rotX) * (level.max.x + level.max.z);
+
+	
+}
+
+void drawDataPoint(var entry){
+	if(show[entry.target_lifeform_name] &&
+		(entry.target_team == 1 &&  show["marines"]) || 
+		(entry.target_team == 2 &&  show["aliens"])){
+		stroke(strokes[0]);
+		fill(strokes[0]);
+		
+		if(show.color){
+			stroke(strokes[entry.target_team]);
+			fill(fillColors[entry.target_lifeform_name]);
+		}
+		strokeWeight(1);
+		
+		point(entry.target_x, entry.target_y,entry.target_z);
+		pushMatrix();
+			translate(entry.target_x, entry.target_y,entry.target_z);
+			box(size[entry.target_lifeform_name]);
+		popMatrix();
+	}
+}
+</script>
+</head>
+<body>
+
+<canvas id="canvas" style="background:#555;"></canvas>
+
+</body>
+</html>

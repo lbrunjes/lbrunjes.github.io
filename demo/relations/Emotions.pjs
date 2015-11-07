@@ -1,0 +1,239 @@
+/*
+
+Sample character ratationships
+
+-10 -10 floats
+*/
+
+/*
+
+//first we need an base emotional state.
+//commentsa ar teh negative versions
+
+
+
+Joy	Sadness
+Trust	Disgust
+Fear	Anger
+Surprise	Anticipation
+Sadness	Joy
+Disgust	Trust
+Anger	Fear
+Anticipation	Surprise
+
+Human feelings (results of emotions)	Feelings	Opposite
+Optimism	Anticipation + Joy	Disapproval
+Love	Joy + Trust	Remorse
+Submission	Trust + Fear	Contempt
+Awe	Fear + Surprise	Aggression
+Disappointment	Surprise + Sadness	Optimism
+Remorse	Sadness + Disgust	Love
+Contempt	Disgust + Anger	Submission
+Aggression	Anger + Anticipation	Awe
+
+*/
+	int MAX_EMOTE = 10;
+	int MIN_EMOTE = 0;
+	
+
+class EmotionalState{
+
+	float Joy;
+	float Trust;
+	float Fear;
+	float Suprise;
+	float Sadness;
+	float Disgust;
+	float Anger;
+	float Anticipation;
+	
+	color cOverall =0;
+	color cJoy;
+	color cTrust;
+	color cFear;
+	color cSuprise;
+	
+	color cSadness;
+	color cDisgust;
+	color cAnger;
+	color cAnticpation;
+	
+	
+	
+
+	EmotionalState(){
+		Joy = random()*MAX_EMOTE;
+		Trust = random()*MAX_EMOTE;
+		Fear = random()*MAX_EMOTE;
+		Suprise = random()*MAX_EMOTE;
+		
+		Sadness = random()*MAX_EMOTE;
+		Disgust = random()*MAX_EMOTE;
+		Anger =random()*MAX_EMOTE;
+		Anticipation = random()*MAX_EMOTE;	
+		Limit();
+		getColors();
+	}
+
+	EmotionalState(joy,tru,fea,s){
+		Joy = joy;
+		Trust = tru;
+		Fear = fea;
+		Suprise = s;
+		
+		Sadness = MAX_EMOTE - Joy;
+		Disgust = MAX_EMOTE - Trust;
+		Anger = MAX_EMOTE - Fear;
+		Anticipation = MAX_EMOTE - Suprise;
+		
+		Limit();
+		getColors();
+	}
+	void getColors(){
+	
+		cJoy = color(255,255,0, map(Joy, 0, MAX_EMOTE, 0, 255));
+		cTrust = color(128,255,0, map(Trust, 0, MAX_EMOTE, 0, 255));
+		cFear = color(0,255,0, map(Fear, 0, MAX_EMOTE, 0, 255));	
+		cSuprise = color(0,128,255, map(Suprise, 0, MAX_EMOTE, 0, 255));
+		
+		cSadness = color(0,0,255, map(Joy, 0, MAX_EMOTE, 0, 255));
+		cDisgust = color(0,128,255, map(Trust, 0, MAX_EMOTE, 0, 255));
+		cAnger = color(255,0,0, map(Fear, 0, MAX_EMOTE, 0, 255));	
+		cAnticpation = color(255,128,0, map(Suprise, 0, MAX_EMOTE, 0, 255));
+//this is a terrible way to blend my colors
+		cOverall = (cAnticpation + cAnger +cDisgust +	cSadness+	cSuprise+	cFear +cJoy + cTrust)/8
+									
+								
+							
+						
+					
+				;
+			
+	}
+	
+	void Limit(){
+		if(Joy > MAX_EMOTE){
+			Joy = MAX_EMOTE;
+		}
+		
+		if(Joy < MIN_EMOTE ||!Joy){
+			Joy = MIN_EMOTE;
+		}
+		
+		if(Trust > MAX_EMOTE){
+			Trust = MAX_EMOTE;
+		}
+		
+		if(Trust < MIN_EMOTE || !Trust){
+			Trust = MIN_EMOTE;
+		}
+		
+		if(Fear > MAX_EMOTE){
+			Trust = MAX_EMOTE;
+		}
+		
+		if(Fear < MIN_EMOTE || !Fear){
+			Trust = MIN_EMOTE;
+		}
+		
+		if(Suprise > MAX_EMOTE){
+			Trust = MAX_EMOTE;
+		}
+		
+		if(Suprise < MIN_EMOTE || !Suprise){
+			Suprise = MIN_EMOTE;
+			
+			
+		}
+		
+		
+		if(Sadness > MAX_EMOTE){
+			Sadness = MAX_EMOTE;
+		}
+		
+		if(Sadness < MIN_EMOTE || !Sadness){
+			Sadness = MIN_EMOTE;
+		}
+		if(Disgust > MAX_EMOTE){
+			Disgust = MAX_EMOTE;
+		}
+		
+		if(Disgust < MIN_EMOTE || !Disgust){
+			Disgust = MIN_EMOTE;
+		}
+		if(Anger > MAX_EMOTE){
+			Anger = MAX_EMOTE;
+		}
+		
+		if(Anger < MIN_EMOTE || !Anger){
+			Anger = MIN_EMOTE;
+		}
+		if(Anticipation > MAX_EMOTE){
+			Anticipation = MAX_EMOTE;
+		}
+		
+		if(Anticipation < MIN_EMOTE || !Anticipation){
+			Anticipation = MIN_EMOTE;
+		}
+	
+	
+	
+	}
+
+	//multiply 2 states and oouput a new one. 
+	//bleed through was dropped but would be fun.
+	EmotionalState Multiply(EmotionalState state, float intensity){//, float bleed){
+	
+		EmotionalState product = new EmotionalState(0,0,0,0);
+		if(intensity <=0){
+			intensity = 0.1;
+		}
+		if(intensity >=1){
+			intensity = .9;
+		}
+
+		//
+		product.Joy = (Joy + intensity * state.Joy)/2;
+		product.Trust = (Trust + intensity * state.Trust)/2;
+		product.Fear = (Fear + intensity * state.Fear)/2;
+		product.Suprise = (Joy + intensity * Suprise.Joy)/2;
+				
+		product.Sadness = (Sadness + intensity * state.Sadness)/2;
+		product.Disgust = (Disgust + intensity * state.Disgust)/2;
+		product.Anger = (Anger + intensity * state.Anger)/2;
+		product.Anticipation = (Anticipation + intensity * Anticipation.Joy)/2;
+		
+		product.Limit();
+		product.getColors();
+		
+		
+		return product;
+		
+	}
+	
+	void draw(x,y, size){
+		noStroke();
+		fill(cJoy);
+		ellipse(x-size, y, size, size);
+		fill(cTrust);
+		ellipse(x-size/2, y-size/2, size, size);
+		fill(cFear);
+		ellipse(x, y-size, size, size);
+		fill(cSuprise);
+		ellipse(x+size/2, y-size/2, size, size);
+		
+		fill(cSadness);
+		ellipse(x+size, y, size, size);
+		fill(cDisgust);
+		ellipse(x+size/2, y+size/2, size, size);
+		fill(cAnger);
+		ellipse(x, y+size, size, size);
+		fill(cAnticpation);
+		ellipse(x-size/2, y+size/2, size, size);
+	
+	}
+
+}
+
+
+

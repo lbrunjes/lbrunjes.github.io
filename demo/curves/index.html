@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<script src="../processing-1.3.6.js"></script>
+<script type="text/processing" data-processing-target="graph">
+
+
+int getY(x){
+return eval(formulaY);
+}
+
+
+void setup(){
+
+size(800,500);
+frameRate(30);
+
+}
+
+void draw(){
+noStroke();
+fill(255);
+	rect(100,100,5,5);
+	rect(100,300,5,5);
+	rect(700,300,5,5);
+	rect(700,100,5,5);
+	rect(500,80,5,5);
+	rect(300,160,5,5);
+
+  stroke(#0000ff);
+  noFill();
+  
+   beginShape();
+    vertex(100,100);
+    vertex(100,300);
+    vertex(700,300);
+    vertex(700,100);
+   
+  endShape();
+
+ stroke(#ff0000);
+  beginShape();
+   
+    curveVertex(700,100);
+    curveVertex(700,100);
+    curveVertex(500,80);
+    curveVertex(300,160);
+    curveVertex(100,100);
+    curveVertex(100,100);
+  endShape();
+  
+  
+  
+   stroke(#00ff00);
+  beginShape();
+    vertex(100,200);
+    vertex(100,400);
+    vertex(700,400);
+    vertex(700,200);
+    curveVertex(700,200);
+    curveVertex(700,200);
+    curveVertex(500,180);
+    curveVertex(300,260);
+    curveVertex(100,200);
+    curveVertex(100,200);
+
+  endShape();
+}
+
+</script>
+<script>
+var  formulaY ="((.1*x)*(.1*x))";
+</script>
+</head>
+<body>
+<canvas id="graph"></canvas>
+<p> the green curve in theory should amtch the red/blue image just 100 px lower. The curves sthing seems to apply to the first, non curved, vertices as well.</p>
+</body>
+</html>

@@ -1,0 +1,14 @@
+Malloc considered Symptomatic
+
+The other day I was messing around with an idea and went to see if any of the wel known implementations had been ported to javascript. Along the way I stumbled onto a well mean ing port from C that happily ported malloc into javascript. That way they could keep making malloc calls in their js library.  I'm still not entirely sure why you would want to keep malloc.
+
+My reaction was some place between horror and awe.  On the one hand someone had vaulted bravely into a language they had done  only the minimum ammount of research into and made something that at least nominally worked. On the other they had created a sort of crawling mutant monstrosity by their very haste.
+
+It was like a horror movie when the brave idiot dives through a window into the warehouse to rescue the girl only to discover that someone has been dumping zombie after zombie in there and you cant see the floor anymore. As they vanish into the slavering horde of zombies you basically wonder how they managed to live long enough to get a speaking part. Surely someone who leaps that far before they look would get hit by a bus by the age of 10.
+
+Recently, I have been feeling that way more and more about web development as a whole. We have a great tendency to make choices that are ill considered, short sighted, or arbitrary. As an industry, we seem to be very focused on the idea that somehow if we keep writing more tools that eventually similicty will emerge from the stacked up layers of code. 
+
+Maybe its that as I get older I have already been involved in the debates we are having, but it seems like we have started to have this knee jerk reaction that if we don't get what we want out of a library, language
+
+
+this is a stupid rant y ps and im done with it.

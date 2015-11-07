@@ -1,0 +1,63 @@
+/*
+
+
+
+
+
+*/
+
+class enemy extends worldObject{
+	public weapon wep = new weapon();
+	boolean huntPlayer = false;
+	var points = false;
+	int next = 0;
+	int closeenoughsq = 25;
+	
+	public enemy(int _x, int _y, var[] pattern, int _speed){
+	
+	//	console.log("newenemy", _x,_y,pattern,_speed);
+		x= _x;
+		y=_y;
+		points =pattern;
+		speed = _speed;
+		closeenoughsq= pow(speed,2);
+		collides=true;
+		blocks=true;
+		f= color(255,0,0);
+		s= color(128);
+		
+		
+	}
+	
+	
+	public void update(float delta){
+	
+		if(!points || points.length ==0 || huntPlayer)
+		{
+			//console.log("hk mide on");
+			huntPlayer =true;
+			
+			r =  atan2( y - player.y,x- player.x );
+			wep.projSpeed=60;
+		}
+		else{
+			if( distSq(points[next][0], points[next][1]) <= closeenoughsq){
+				next = (next+1)%points.length;
+			}
+			
+			r =  atan2( y - points[next][1],x-points[next][0] );
+			
+		}
+	//	console.log("enemy moving", next, points, points[next]);
+		move(delta);
+		
+		if(wep){
+			var bulletorigin = [x , y-h/2];
+			float angle= atan2( y - player.y, x- player.x );
+		
+			wep.fire(bulletorigin, angle );
+		}
+	
+	}
+
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+<script src="processing-1.4.1.js"></script>
+<script type= "text/processing" data-processing-target="canvas">
+float cont = 0;
+PGraphics projHorizontal;
+PGraphics projVertical;
+
+void setup() {
+	console.log("setup"); size(200, 400, P3D);
+  projVertical   = createGraphics(200, 200, P3D);
+  projHorizontal = createGraphics(200, 200, P3D);
+}
+
+void drawP(PGraphics proj, int x, int y, color c) {  
+	proj.pushMatrix();
+  proj.beginDraw();
+  proj.strokeWeight(4);
+  proj.stroke(255);
+  proj.fill(150,150,150);
+  proj.background(c);
+  proj.translate(proj.width/2, proj.height/2, 0);
+  beginCamera();
+  if (y == 200)
+  {
+    proj.rotateX(-PI/2);
+  }
+  proj.ortho(0, proj.width, 0, proj.height, -400,400);
+  endCamera();
+  proj.rotateY(-cont*PI/360);
+  // proj.line(0,100,0,-100);
+  proj.line(-60,-60,-60,60,60,60);
+  proj.box(40);
+  proj.endDraw();
+  image(proj.get(), x, y);
+ 	proj.popMatrix();
+}
+
+void draw() {
+
+  drawP(projVertical  ,0,0,  color(100,100,255));
+  drawP(projHorizontal,0,200,color(100,255,100));
+  
+  cont++;
+}
+</script>
+<script type= "text/processing" data-processing-target="canvas2">
+float cont = 0;
+PGraphics projHorizontal;
+PGraphics projVertical;
+
+void setup() {
+	console.log("setup"); size(200, 400, P3D);
+  projVertical   = createGraphics(200, 200, P3D);
+  projHorizontal = createGraphics(200, 200, P3D);
+}
+
+void drawP(PGraphics proj, int x, int y, color c) {  
+	proj.pushMatrix();
+  proj.beginDraw();
+  proj.strokeWeight(4);
+  proj.stroke(255);
+  proj.fill(150,150,150);
+  proj.background(c);
+  proj.translate(proj.width/2, proj.height/2, 0);
+  beginCamera();
+  if (y == 200)
+  {
+    proj.rotateX(-PI/2);
+  }
+  proj.ortho(proj.width/-2, proj.width/2, proj.height/-2, proj.height/2, -400,400);
+  endCamera();
+  proj.rotateY(-cont*PI/360);
+  // proj.line(0,100,0,-100);
+  proj.line(-60,-60,-60,60,60,60);
+  proj.box(40);
+  proj.endDraw();
+  image(proj.get(), x, y);
+ 	proj.popMatrix();
+}
+
+void draw() {
+
+  drawP(projVertical  ,0,0,  color(100,100,255));
+  drawP(projHorizontal,0,200,color(100,255,100));
+  
+  cont++;
+}
+</script>
+</head>
+<body>
+Broken view port
+<canvas id="canvas">
+</canvas>
+fixed:
+<canvas id="canvas2">
+</canvas>
+</body>
+</html>

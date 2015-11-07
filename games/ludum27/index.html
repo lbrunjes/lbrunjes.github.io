@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+	<title> Html5 game prep/setup</title>
+	<link rel="stylesheet" type="text/css" href="game.css"/>
+
+
+	<script src="game.js"></script>
+  <script src="game.math.js"></script>
+	<script src="game.preload.js"></script>
+	<script src="game.sound.js"></script>
+
+
+	<script src="game.screens.menu.js"></script>
+	<script src="game.screens.intro.js"></script>
+	<script src="game.screens.picker.js"></script>
+	<script src="game.screens.duel.js"></script>
+	<script src="game.screens.pillage.js"></script>
+	<script src="game.screens.doom.js"></script>
+	<script src="game.screens.victory.js"></script>
+
+	<script src="game.objects.drawable.js"></script>
+	<script src="game.objects.effect.js"></script>
+
+	<script src="game.objects.dude.js"></script>
+	<script src="game.objects.aidude.js"></script>
+
+	<script src="game.objects.duel.js"></script>
+
+	<script src="game.objects.second.js"></script>
+	<script src="game.objects.seconds.ninja.js"></script>
+
+	<!-- game needs to be fully degfined before diesel startsup-->
+	<script src="diesel.js"></script>
+	<script src="names.js"></script>
+
+	<script>
+	game.me = Object.create(Dude);
+  game.me.init();
+	game.me.chooseDeck(game.seconds);
+
+	for(var i = 0; i < 10 ; i++){
+		game.opponents.push(Object.create(AIDude));
+    game.opponents[i].init();
+		game.opponents[i].chooseDeck(game.seconds);
+    game.opponents[i].chooseSecond();
+		game.opponents[i].name = names.getRandom();
+		game.duels.push( Object.create(Duel));
+		game.duels[i].init(game.me, game.opponents[i]);
+	}
+
+	</script>
+</head>
+<body>
+	<header>
+	</header>
+	<article id="gameContainer">
+		<canvas id="background"></canvas>
+		<canvas id="main"></canvas>
+		<canvas id="foreground"></canvas>
+		<div id="sounds" class="hide"></div>
+	</article>
+	<footer>f</footer>
+</body>
+</html>

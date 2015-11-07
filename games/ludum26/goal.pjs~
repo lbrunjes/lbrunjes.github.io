@@ -1,0 +1,51 @@
+/*
+
+
+
+
+
+*/
+
+
+public class goal extends worldObject{
+
+	boolean last =false;
+
+	public goal(int _x, int _y){
+	
+		x = _x;
+		y = _y;
+		f = color(255,255,0);
+		s = color(255,128,0);
+		collides=true;
+		friendly=false;
+	
+	}
+	
+	public void draw(){
+		fill(f);
+		stroke(s);
+		pushMatrix();
+			translate(x,y);
+	
+			if(last){
+				image(img.snacks, w/-2,h/-2,w,h);
+			}
+			else{
+				image(img.stairs, w/-2,h/-2,w,h);
+			}
+		popMatrix();
+	}
+	
+	public void onDestroy(){
+		gameState = WON;
+	}
+	
+	public bool inside(int _x , int _y, worldObject o){
+		if(abs(x - _x) <= w/2+o.w/2 && abs(y- _y) <= h/2 + o.h/2){
+			return true;
+		}
+		return false
+	}
+
+}

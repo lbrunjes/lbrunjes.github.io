@@ -1,0 +1,139 @@
+
+
+
+class Point{
+	private static int CLOSE_ENOUGH =4; 
+	public float x;
+	public float y;
+	
+	Point (float X, float Y){
+		x= X;
+		y=Y;
+	}
+	
+	public boolean equals(Object o){
+		Point p = (Point)o;
+		return this.x == p.x &&this.y ==p.y;
+	}
+	public boolean equals(Point p){
+		
+		return this.x == p.x &&this.y ==p.y;
+	}
+	
+	public Point MidPoint(Point p){
+		return new Point((p.x+this.x)/2,(p.y +this.y)/2); 
+	}
+	public Point Subtract(Point p){
+		return new Point(x-p.x,y-p.y);
+		
+	}
+	public Point Subtract(double _x, double _y){
+		return new Point(x-_x,y-_y);
+		
+	}	
+	public Point Add(Point p){
+		return new Point(x+p.x,y+p.y);
+		
+	}
+	public Point Add(double _x, double _y){
+		return new Point(x+_x,y+_y);
+		
+	}
+	
+	
+	public boolean At(Point p){
+		if(this.x ==p.x && this.y == p.y){
+			return true;
+		}
+		return Distance(p) <= CLOSE_ENOUGH;
+		
+	}
+	public double Distance(Point p){
+		return Math.sqrt(Math.pow(this.x-p.x, 2)+Math.pow(this.y-p.y, 2));	
+	}
+	public double Distance(double _x, double _y){
+		return Math.sqrt(Math.pow(this.x-_x, 2)+Math.pow(this.y-_y, 2));	
+	}
+	public double SqDistance(Point p){
+		return Math.pow(this.x-p.x, 2)+Math.pow(this.y-p.y, 2);	
+	}
+	public double SqDistance(double _x, double _y){
+		return Math.pow(this.x-_x, 2)+Math.pow(this.y-_y, 2);	
+	}
+	
+	public String toString(){
+		return "("+x+","+y+")";
+	
+	}
+	
+	public double Direction(Point p){
+		double direction = Math.atan2(this.x -p.x, this.y-p.y);
+		return direction;
+	}
+
+
+
+	@Override
+	public int compareTo(Point p) {
+		
+		return (int)((this.x -p.x) + (this.y -p.y));
+	}
+}
+
+class edge{
+	
+	Point start;
+	Point end;
+	Point mp = null;
+	
+	int region1;
+	int region2;
+	
+	int type =0;
+	boolean passable =true;
+
+	edge(Point Start){
+		start =start;
+	}
+	edge(Point Start, Point End){
+		start =start;
+		end = End;
+	}
+	
+	Point midpoint(){
+		if(mp ==null && start &&end){
+			mp = start.midpoint(end);
+		}
+		return mp;
+	}
+
+
+
+	
+}
+class region{
+	Point center;
+	var edges =[];
+	voronoi internal;
+	
+	region (Point Center){
+		center = center;
+	}
+}
+
+
+class voronoi{
+	var Points = [];
+	var regions = [];
+	int width;
+	int height;
+	
+	voronoi(int points, int w, int h){
+	
+		for(int i =0 ; i < points<i++){
+			rregions.push( new region(new Point(Math.random() * w, Math.Random() *h))); 
+		}
+		
+	}
+
+}

@@ -1,0 +1,41 @@
+*{
+margin:0;
+padding:0;
+display:block;
+}
+body{
+background: #222;
+color:#eee;
+font: 16pt  sans-serif;
+}
+head, script,.hide{
+display:none!important;
+}
+header,footer{
+text-align:center;
+clear:both;
+}
+
+
+canvas,video{
+background:transparent;
+position:absolute;
+   
+user-select: none;
+-moz-user-select: none;
+-webkit-user-select: none;
+-ms-user-select: none;
+}
+
+
+
+#container{
+width:964px;
+margin:1ex auto;
+}
+
+#gameContainer{
+	border:2px solid #006600;
+	height:640px;
+}
+

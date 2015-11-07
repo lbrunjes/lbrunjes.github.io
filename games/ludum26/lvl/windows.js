@@ -1,0 +1,27 @@
+{
+	"goal":{"x":304,"y":208},
+	"walls":[
+			
+			
+	
+
+		
+		
+		
+	],
+	"enemies":[
+	
+		{"x":0,"y":200, "path":false, "speed":40,"nowep": true},
+		{"x":64,"y":200, "path":false, "speed":40,"nowep": true},
+		{"x":-64,"y":200, "path":false, "speed":40,"nowep": true}
+	
+
+		
+	],
+	"goalIsLast":true,
+	"nextFloor":"none",
+	"width":640,
+	"height":480
+	
+}
+

@@ -1,0 +1,87 @@
+TODO:
+
+Diesel:
+	pressed keys array here would be better than moving that to the game objects to be honest.
+
+Game:
+	BUGS:
+		falling issue. check down speed 
+		Jump bug is back.
+		Twitch bug is too. bad times.
+	ART:
+		I need to show the player better.
+		I need a color palette to use for stuff. *
+		Change silo bg.
+		Change secapre bg.
+		
+	I need a between levels thing going on.
+	Display:
+		Units need a gun attach point/guns need an offset,(not sure this is true at all)
+		fix offsets so they aren't constant unless you are pushing an edge -bottom and right need this now;
+		post 9/11 add a total information awareness counter
+		after 9/11 use monchrom blocks for everything/ eliminate all colors from the levels.
+		
+	Sound:
+		bakcground music
+		sound effects.
+	
+	Levels:
+		90s levels. the party level will be pretty much amazing. and it will be every pother level. emphasize hacking as a method of getting intel
+			Sweeetttish party.
+				this si a a series of rooms that tele por the player to various ones after a fixed number of frames.
+			a few hokey scifi hoaxes where you get no intel and the missions are pretty much similar.
+				chem trails: sky jumping leve
+				x files: creepy woods with no intel and nothing in it
+				serbia shooters ina  forest minimal intel. but sebrincia
+				iraq 1993 babbies and cnn.
+				a seti mission would be adorable.
+				some sort of post soivet nuke sissues.
+				
+				these should be super cheesy and super 90s spy movie.
+				use kickass 90s pallete too.
+				
+			
+		2001:
+			helpless airplane level.
+			Completely change pallette/tone after this. wsithc to a monochrom pallete, badguys are always black the guy is always white.  iconography isntead of shapes and colors like before.
+			each point of intel is not harder toget and there are 3 generic types of missions. the are randomized.
+				the corporate breakin.
+				the mansion wiretap.
+				the post battle mop up'
+				a raid to killa  high value target for his intel.
+			each mission ads a few points to total information awareness.
+			the goal is to get 100% awareness. 
+			If you get there you win.
+			losing a mans now drosp your info awareness rating.
+			ever 10% you get another mans.
+			the player is issued a gun at this point to make sure that things are as high stress as possible.
+	
+			
+			add wiretaps, that periodically set their -5 flag once setup.  by the end these levels should be super grindy and and feel less and ess like you are winning.
+	Units:
+		add sleeping target
+		add wiretaps.
+		add push blocks
+		
+		
+
+	GamePlay:
+		Do we want the player to pick guns or just to have him pick them up and use the alt , do i even want guns?
+		Chaser guys?
+		
+	features:
+		water?
+		monster spawners. x% if not max number of monsters is set. 
+
+	
+Editor:
+	loading of existing levels. level = diesel.load(x.json);
+	display units.
+	display effects.
+	selection of both of the above with the mouse.
+	
+	issue with the vetical spacing in bottom right corner.
+
+
+
+

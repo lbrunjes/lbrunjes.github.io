@@ -1,0 +1,181 @@
+/*
+
+Draw methods
+
+*/
+
+public class RenderSystem{
+
+	PImage _background;
+	PIMage _midground;	
+	
+	public RenderSystem(){
+		_background = loadImage("img/background.png");
+		_midground = loadImage("img/midground.png");
+	}
+	
+	void background(){
+		//TODO use images here
+		fill(0);
+		rect(0,0,witdh,height);
+		return;
+		//draw teh background starfield
+		image(_background,0,0,width,height);
+		//draw the midground stars
+		image(_midground,-CamX*2,-CamY*2,width*4,height*4);
+	}
+	void drawIntro(){
+		fill(COLOR_MENU_TEXT);
+		textAlign(CENTER);
+		textSize(TITLE_SIZE);
+		text("Pixel Pushin'!", width/2, height/2);
+		textSize(TEXT_SIZE);
+		text("The World needs pixels", width/2, height/2+20);
+		text("Get the Blue ship down the path.", width/2, height/2+40);
+		text("press any key to continue", width/2, height-20);
+
+	}
+
+	void drawOffer(){
+		fill(COLOR_MENU_TEXT);
+		textAlign(CENTER);
+		textSize(TITLE_SIZE);
+		text("Boys Get Ready", width/2, 40);
+		textSize(TEXT_SIZE);
+		text("We got us a job", width/2, 60);
+		text("Press Enter to continue", width/2, height-20);
+		
+		
+		//Draw mission text
+		
+		text(CurrentMission.name, width/4, 100);
+		
+		textAlign(LEFT);
+		text(CurrentMission.description, TEXT_SIZE, 140,width/2-TEXT_SIZE, height/4*3);
+		
+		text("Rating:", width/2+TEXT_SIZE, 100);
+		for(int i =0; i < CurrentMission.rating; i++){
+			text("*", width/2+70+(i*20), 100);
+		}
+		text("Your Picked Guards:", width/2+TEXT_SIZE, 180);
+		
+		//
+		for(int i=0; i < GUARDS_MAX; i++){
+			noFill()
+			rect( width/2+118,200+100*i+ 2, 90,20);
+			rect( width/2+118,220+100*i+ 2, 90,20);
+			rect( width/2+118,240+100*i+ 2, 90,20);
+			
+			fill(COLOR_MENU_TEXT);
+			text("GREEN "+i, width/2+TEXT_SIZE, 200+100*i);
+			text("     Pilot:", width/2+TEXT_SIZE, 200+100*i+20);
+			
+			text("     Weapon:", width/2+TEXT_SIZE, 200+100*i+40);
+			text("     Armor:", width/2+TEXT_SIZE, 200+100*i+60);
+			
+			text(AllGuards[SelectedGuards[i]].name, width/2+120, 200+100*i+20);
+			text(Combat.Weapons[AllGuards[SelectedGuards[i]].weapon].name, width/2+120, 200+100*i+40);
+			text(Combat.Armors[AllGuards[SelectedGuards[i]].armor].name, width/2+120, 200+100*i+60);
+			
+			//TODO Show Some Values?
+			text("ACC: " + floor(AllGuards[SelectedGuards[i]].pctToHit*100), width/2+TEXT_SIZE+200, 200+100*i+20);
+
+			text("RNG:"+Combat.Weapons[AllGuards[SelectedGuards[i]].weapon].range, width/2+TEXT_SIZE+200, 200+100*i+40);
+			text("DAM:"+Combat.Weapons[AllGuards[SelectedGuards[i]].weapon].damage, width/2+TEXT_SIZE+300, 200+100*i+40);
+			text("ROF:"+Combat.Weapons[AllGuards[SelectedGuards[i]].weapon].rof, width/2+TEXT_SIZE+400, 200+100*i+40);
+			
+			text("DMR: "+Combat.Armors[AllGuards[SelectedGuards[i]].armor].DamageReduction, width/2+TEXT_SIZE+200, 200+100*i+60);
+		}
+		
+		
+		
+		
+		//draw the minimual ui
+		
+		stroke(COLOR_MENU_STROKE);
+		
+		line(TEXT_SIZE/2, 130, width-TEXT_SIZE /2,129);
+		line(TEXT_SIZE/2, height/4*3, width-TEXT_SIZE /2,height/4*3+1);
+		
+	}
+
+	void drawMission(){
+		
+		CurrentMission.draw();
+		if(!paused){
+			CurrentMission.update();
+		}
+	}
+
+	void drawMissionSuccesss(){
+		CurrentMission.draw();	
+		fill(0,0,0,128);
+		stroke(255);		
+		rect(width/4,height/4,width/2, height/2);
+		fill(COLOR_MENU_TEXT);
+		textAlign(CENTER);
+		textSize(TITLE_SIZE);
+		text("Pixel Pushin'!", width/2, height/2);
+		textSize(TEXT_SIZE);
+		text("You win", width/2, height/2+20);
+		text("press any key to continue", width/2, height/4*3-20);
+	}
+
+	void drawMissionFailed(){
+		CurrentMission.draw();
+		fill(0,0,0,128);
+		stroke(255);
+		rect(width/4,height/4,width/2, height/2);
+		fill(COLOR_MENU_TEXT);
+		textAlign(CENTER);
+		textSize(TITLE_SIZE);
+		text("Pixel Pushin'!", width/2, height/2);
+		textSize(TEXT_SIZE);
+		text("You failed!!", width/2, height/2+20);
+		text("press any key to continue", width/2, height/4*3-20);
+	}
+	
+	void drawMenu(){
+		fill( COLOR_MENU_TEXT);
+		textAlign(CENTER);
+		text("Devil's Deliveries", width/2, height/4);
+		int buttonWidth = 120;
+		int vertLines=3;
+		
+		for(int i =0; i< theMissions.length;i++){
+			drawIcon(buttonWidth*2* floor(i/vertLines) + width/5, height/4+50+(i%vertLines*100), buttonWidth, 60, "Level "+i, i>MissionId);
+			text(theMissions[i].name, buttonWidth*2* floor(i/vertLines) + width/5, height/4+70+(i%vertLines*100))
+		}
+		
+		(MenuSelected != MENU_NEXT)? fill( COLOR_MENU_TEXT):fill(COLOR_MENU_SELECTED);
+		text("NEXT", width/2, height/4*3);
+		
+		/*(MenuSelected != MENU_QUIT)? fill( COLOR_MENU_TEXT):fill(COLOR_MENU_SELECTED);
+		text("QUIT", width/2, height/4+140);*/
+	}
+
+	void drawIcon(int x, int y, int w, int h, string txt, bool disabled){
+		fill(COLOR_WAGON_FILL);
+		noStroke();
+		beginShape();
+			vertex(x-w/2,y-h/2);
+			vertex(x+w/2,y-h/2);
+			vertex(x+w/2,y+h/2);
+			vertex(x-w/2,y+h/2);
+			vertex(x-w/2,y-h/2);
+			
+		endShape();
+		noFill();
+		stroke(COLOR_WAGON_STROKE);
+		rect(x-w/2,y-h/2,w,h);
+		
+		fill( COLOR_MENU_TEXT);
+		if(disabled){
+			fill( COLOR_MENU_DISABLED);
+		}
+		text(txt,x,y);
+	
+	}
+
+}
+

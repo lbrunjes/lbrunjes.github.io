@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+<head>
+<title>Do they really have X?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="http://housemark.co/css/housemark-default.css?v=1.0" media="all"/>
+<script>
+var resTick = 6;
+
+var marines = {
+	"res":0, 
+	"tResTick":6,
+	//"with":["cc","ip","extractor"],
+	
+	
+	"cc":{"rtime":0,"research":0,"cost":0, "build":15,"req":[""]},//costs 15 bt got it free
+	"cc2":{"rtime":0,"research":0,"cost":15, "build":15,"req":["cc"]},
+	"ip":{"rtime":0,"research":0,"cost":0, "build":7,"req":[""]},//cost 10
+	"extractor":{"rtime":0,"research":0,"cost":10, "build":12,"req":[""]},
+	"armory":{"rtime":0,"research":0,"cost":10, "build":12,"req":["cc"]},
+	"advarmory":{"rtime":90,"research":20,"cost":0, "build":0,"req":["armory"]},
+	"armslab":{"rtime":0,"research":0,"cost":20, "build":17,"req":["armory"]},
+	"proto":{"rtime":0,"research":0,"cost":40, "build":20,"req":["cc2"]},
+	"pg":{"rtime":45,"research":15,"cost":15, "build":12,"req":["pg"]},
+	"obs":{"rtime":0,"research":0,"cost":15, "build":15,"req":["armory"]},
+	"robotic":{"rtime":0,"research":0,"cost":15, "build":17,"req":["armory"]},
+	"sentry":{"rtime":0,"research":0,"cost":5, "build":3,"req":["battery"]},
+	"battery":{"rtime":0,"research":0,"cost":10, "build":5,"req":["robotic"]},
+	"arc":{"rtime":40,"research":10,"cost":15, "build":15,"req":["robotic"]},
+	"mac":{"rtime":0,"research":0,"cost":0, "build":10,"req":["robotic"]},
+	"sg":{"rtime":30,"research":20,"cost":0, "build":0,"req":["armory"]},
+	"mine":{"rtime":20,"research":15,"cost":0, "build":0,"req":["armory"]},
+	"welder":{"rtime":10,"research":10,"cost":0, "build":0,"req":["armory"]},
+	"flamer":{"rtime":60,"research":25,"cost":0, "build":0,"req":["advarmory"]},
+	"grenade":{"rtime":20,"research":20,"cost":0, "build":0,"req":["armory"]},
+	"exo":{"rtime":30,"research":90,"cost":0, "build":0,"req":["proto"]},
+	"jp":{"rtime":90,"research":0,"cost":25, "build":0,"req":["proto"]},
+	"dual":{"rtime":60,"research":20,"cost":0, "build":0,"req":["exo"]},
+	"w1":{"rtime":80,"research":15,"cost":0, "build":0,"req":["armslab"]},
+	"a1":{"rtime":80,"research":15,"cost":0, "build":0,"req":["armslab"]},
+	"w2":{"rtime":100,"research":25,"cost":0, "build":0,"req":["w1"]},
+	"a2":{"rtime":100,"research":25,"cost":0, "build":0,"req":["a1"]},
+	"w3":{"rtime":120,"research":35,"cost":0, "build":0,"req":["w2"]},
+	"a3":{"rtime":120,"research":35,"cost":0, "build":0,"req":["a2"]}
+};
+</script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-24373547-1']);
+  _gaq.push(['_setDomainName', '.Housemark.co']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<script src="../processing-1.4.1.js"></script>
+<script type="text/processing" data-processing-target="output">
+
+int maxTime;
+int maxRts;
+int addTime;
+int addRTime;
+int numRes;
+int numResR;
+
+int ttlres;
+int ttltime;
+int ttl;
+
+
+var colors =[
+		color(0),
+		color(255,0,0),
+		color(128,128,0),
+		color(128,128,128),
+		color(0,128,128),
+		color(0,255,0)
+	];
+
+
+string lastVal ="xx";
+string chain= "";
+boolean recalculate =true;
+
+void setup(){
+size(400,400);
+frameRate(10);
+console.log("end setup");
+
+}
+
+void draw(){
+	background(0);
+	chain ="";
+	string temp = document.getElementById("targetTech").value;
+	//calculate total res expenditure to get here with no other expendatures
+//	if(lastVal != temp){
+	 addTime=0;
+	 addRTime=0;
+	 numRes=0;
+	 numResR=0;
+	 lastVal =temp;
+//	 console.log(temp);
+//	}
+	
+
+	while(temp !=""){
+		addRTime += marines[temp].rtime; //add research time
+		addTime += marines[temp].build;// add build time;
+		numRes +=marines[temp].cost;//construcion
+		numResR += marines[temp].research;
+		temp = marines[temp].req;
+		chain += " -> "+temp;
+	}
+	
+	ttlres = numRes+numResR;
+	neededres  =ttlres - marines.res;
+	ttltime =addRTime + addTime;
+	ttl= ttlres * resTick +ttltime;
+	
+	if(neededres < 0){
+		neededres =0;
+	}
+
+
+	float ratio = width*.8/ttl;
+
+	//draw lines for rts
+	for(int i=colors.length ;i>0 ;i--){
+		int output = (ceil(neededres * resTick / i) +ttltime);
+		oint output2=0;
+		if(i > 1){
+		 output2 = (ceil(neededres * resTick / i) +ttltime);
+		}
+		noFill();
+		stroke(colors[i]);
+		line(0,height,width, height - (width/resTick*i));
+		line(output *ratio, height, output *ratio,height - (output*ratio/resTick*i));
+		noStroke();
+		fill(colors[i]);
+		
+		text(i+"RT: "+ toTime(output), 20, 120+ 20 *i);	
+		
+		
+		
+		
+		
+		
+		//time to target here
+	}
+	
+	fill(255);
+	text("Required: "+chain.substring(0, chain.length -4), 20,20);
+	
+	text("RES COST:" +(ttlres), 20,40);
+	text("TIME COST:" + toTime(ttltime), 20,60);
+	
+	text("Start Res:" + (marines.res), 20,80);
+	text("Needed Res:" + neededres , 20,100);
+
+
+}
+
+string toTime(int num){
+	if(num %60 >9){
+		return floor(num/60)+":"+num%60;
+	}
+	else{
+		return floor(num/60)+":0"+num%60;
+	}
+}
+</script>
+
+<style>
+.disclaimer{
+ background:#97e8ad;
+ border;1px solid #000;
+ padding:1em 1ex;
+}
+</style>
+</head>
+<body>
+<body>
+<div id="content">
+	<header>
+		<img src="http://housemark.co/images/translogo_fff.png" alt="housemark logo" id="mainlogo"/>
+	</header>
+	<div id="data">
+<h1>Can the marines have 
+
+
+<select id="targetTech">
+
+
+<optgroup label="buildings">
+	<option value="armslab">Arms Lab</option>
+	<option value="armory">Armory</option>
+	<option value="advarmory">Advanced Armory</option>
+	<option value="battery">Battery, sentry</option>
+	<option value="cc">Command Station</option>
+	<option value="cc2">Command Station (second)</option>
+	<option value="cc">Command Station</option>
+	<option value="extractor">extractor</option>
+	<option value="obs">Observatory</option>
+	<option value="pg">Phase Gate</option>
+	<option value="proto">Prototype lab</option>
+	<option value="robotics">Robotics Factory</option>
+	<option value="sentry">Sentry Gun</option>
+</optgroup>
+<optgroup label="robots">
+	<option value="arc">ARC</option>
+	<option value="mac">MAC</option>
+</optgroup>
+<optgroup label="upgrades">
+	<option value="a1">Armor 1</option>
+	<option value="a2">Armor 2</option>
+	<option value="a3">Armor 3</option>
+	<option value="w1">Weapons 1</option>
+	<option value="w2">Weapons 2</option>
+	<option value="w3">Weapons 3</option>
+</optgroup>
+<optgroup label="weapons and equipment">
+<option value="sg">Shotgun</option>
+	<option value="welder">Welder</option>
+	<option value="mines">Mines</option>
+	<option value="gl">Grenade Launcher</option>
+	<option value="flamer">Flamethrower</option>
+	<option value="jp">JetPack</option>
+	<option value="exo">Exo(Fist)</option>
+	<option value="dual">Dual Exo</option>
+</optgroup>
+</select>?</h1>
+<p> this take any tech and see's how long it would take a focused marine team to research, build, and construct it. For structures it assumes building times. for guns it assumes availablility is enough.</p>
+<canvas id="output"></canvas>
+<p class="disclaimer">This uses numbers from the community wiki. This assumes the only res being spent is on the tech or item picked and nothing else. In other words, if you pick 6 rts they are free in the time calcualtion.</p>
+</div>
+</dov>
+</body>
+</html>

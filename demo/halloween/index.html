@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+<script src="diesel.js"></script>
+<link rel="stylesheet"  href="game.css" media="all"/>
+<script>
+var video;
+var game={container:"game",
+width: 640,height: 480,
+settings:{screen:"static",},
+context:{"output":false,"top":false,"output2":false,"output3":false},
+
+setup:function(){
+
+	navigator.getMedia = ( navigator.getUserMedia ||
+							navigator.webkitGetUserMedia ||
+							navigator.mozGetUserMedia ||
+							navigator.msGetUserMedia);
+
+		video = document.getElementById('webcam');
+		var canvas       = document.getElementById('output');
+		
+
+
+	  navigator.getMedia(
+		{
+		  video: true,
+		  audio: false
+		},
+		function(stream) {
+		  if (navigator.mozGetUserMedia) {
+			video.mozSrcObject = stream;
+		  } else {
+			var vendorURL = window.URL || window.webkitURL;
+			video.src = vendorURL.createObjectURL(stream);
+		  }
+		  video.play();
+		  //height = video.videoHeight / (video.videoWidth/width);
+			video.setAttribute('width', game.width);
+			video.setAttribute('height',  game.height);
+			canvas.setAttribute('width',  game.width);
+			canvas.setAttribute('height',  game.height);
+			document.getElementById("top").setAttribute('width',  game.width);
+			document.getElementById("top").setAttribute('height',  game.height);
+		},
+		function(err) {
+		  console.log("An error occured! " + err);
+		}
+	  );
+	  
+	  
+    
+
+}
+};
+
+
+
+
+</script>
+<script src="screens.js"></script>
+</head>
+<body>
+<div id="game">
+	<video id="webcam"></video>
+	<canvas id="output"></canvas>
+	<canvas id="top" ></canvas>
+
+</div>
+</body>
+</html>

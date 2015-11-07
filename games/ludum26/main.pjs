@@ -1,0 +1,243 @@
+/*
+
+
+ @pjs preload="img/main.png,
+  img/dude_front.png,
+   img/dude_back.png,
+   img/snacks.png, 
+   img/ticket.png, 
+   img/desk_1.png,
+   img/desk_2.png,
+   img/file.png,
+   img/stairs.png
+   ";
+
+
+*/
+
+int lastframe=0;
+float delta = 0 ;
+movie mov;
+
+void setup(){
+	size(wSize[0],wSize[1]);
+	player = new player();
+	thelevel = new level();//firstLevel);
+	//
+	img.main = loadImage("img/main.png");
+	img.dude = {};
+	img.dude.front = loadImage("img/dude_front.png");
+	img.dude.back  = loadImage("img/dude_back.png");
+	img.snacks  = loadImage("img/snacks.png");
+	img.ticket  = loadImage("img/ticket.png");
+	img.desk  = loadImage("img/desk_1.png");
+	img.file = loadImage("img/file.png");
+	img.stairs = loadImage("img/stairs.png");
+	img.stairsBack = loadImage("img/stairs_no.png");
+}
+void draw(){
+	delta = (lastframe-millis())/1000;
+	lastframe = millis();
+	background(0);
+	switch(gameState){
+		case LOADING:
+			drawLoading();
+		break;
+		case  MENU:
+			drawMenu();
+		break;
+		
+		case CHARACTER:
+			drawPicker();
+			//updatePicker(delta);
+		break;
+		
+		case GAME:
+			drawGame();
+			updateGame(delta);
+	
+		break;
+		
+		case LOST:
+			drawLost();
+		break;
+		
+		case WON:
+			drawWon();
+		break;
+		case INTRO:
+			drawMovie();
+		break;
+	}
+}
+
+void drawLoading(){
+	
+	fill(0,255,0);
+	text("...", width/3,height/3);
+	
+	//TODO check loading completed;
+	if(img.main && 
+	img.dude.front && 
+	img.dude.back &&
+	img.ticket &&
+	img.desk &&
+	img.file){
+		gameState= MENU;
+	}
+}
+
+void drawMenu(){
+	image(img.main,0,0);
+	textSize(48);
+	fill(255);
+	text("EVIL LUNIX \nSYSTEM ADMIN",48,48);
+	textSize(24);
+	text("PRESS ANY KEY TO PLAY", 48,height/4*3);
+}
+void drawMovie(){
+	if(!mov){
+		mov= new movie();
+	}
+	
+	mov.draw();
+}
+
+void drawPicker(){
+	image(img.main,0,0);
+	textSize(48);
+	fill(255);
+	text("EVIL LUNIX \nSYSTEM ADMIN",48,48);
+	textSize(24);
+	text("THE WINDOWS ADMINS STOLE\nYOUR VENDING MACHINE.", 48,height/4*2);
+	text("GET THE SNACKY CAKES \nWITHOUT ANY MORE TROUBLE TICKETS\nAVOID LUSERS\nAVOID FLYING TROUBLE TICKETS", 48,height/4*3);
+}
+
+void drawGame()
+{
+	background(128);
+	pushMatrix();
+		translate(width/2,height/2);
+		translate(-1* player.x,-1* player.y);
+	
+		//draw the level;
+		if(thelevel){
+			thelevel.draw();
+		}
+		//draw tenemies
+		
+		for(int i =0;i < thelevel.enemies.length;i++){
+			thelevel.enemies[i].draw();
+		}
+		//drwa teh player
+		player.draw();
+		
+		//draw any effects;
+		for(int i =0;i < thelevel.effects.length;i++){
+			thelevel.effects[i].draw();
+		}
+	popMatrix();
+}
+void updateGame(float delta){
+	
+	
+	player.update(delta);
+	
+	thelevel.update(delta);
+
+	if(player.remove){
+		player.onRemove();
+	}
+	
+	
+}
+
+void drawWon(){
+	image(img.main,0,0);
+	fill(255);
+	text("WON", width/3,height/3);
+}
+
+void drawLost(){
+	
+	if(!theticket){
+		document.getElementById("type").play();
+		theticket = new troubleTicket();
+	}
+	else{
+		theticket.draw();
+	}
+
+
+}
+
+void mouseClicked(){
+	if(gameState == GAME){
+		player.click()
+		
+	}
+}
+void mouseWorldCoords(){
+return [mouseX -width/2 + player.x, mouseY -height/2+player.y];
+}
+
+
+
+bool canMove(float x, float y, worldObject o)
+{
+	bool okay= 
+			x-o.w/2 > thelevel.w/-2 && 
+			x+o.w/2 < thelevel.w/2 && 
+			y-o.h/2 > thelevel.h/-2 && 
+			y+o.h/2 < thelevel.h/2;
+	
+
+	for(int  i = 0; i < thelevel.walls.length && okay;i++){
+		if(thelevel.walls[i].inside(x,y, o)){
+			okay =false;
+		}
+	}
+	
+	
+	
+	return okay;
+}
+void keyPressed(){
+
+	switch(gameState){
+		case LOADING:
+		
+		break;
+		case  MENU:
+			gameState = INTRO;
+		break;
+		
+		case CHARACTER:
+			//handleCharPress(keyCode);
+			thelevel.reset();
+			
+			gameState++;
+		break;
+		
+		case GAME:
+			player.handleKeyPress(keyCode,true);
+		break;
+		
+	
+		case WON:
+			gameState= MENU;
+		break;
+			case LOST:
+			default:
+			break;
+	}
+
+}
+void keyReleased(){
+	if(gameState ==  GAME){
+			player.handleKeyPress(keyCode,false);
+	}
+}
+
+
+ 

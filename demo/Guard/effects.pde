@@ -1,0 +1,163 @@
+/*
+Effects
+*/
+
+int EFFECT_COUNT =4;
+int EFFECT_INSTANCE_COUNT =256;
+int EFFECT_BLIP=0;
+int EFFECT_BLIP_YELLOW = 0;
+int EFFECT_BLIP_BLUE = 1;
+int EFFECT_EXPLODE =2;
+int EFFECT_TEXT=3;
+
+public class EffectEngine{
+
+	EffectType[] types;
+	
+	EffectInstance[] instances;
+	
+	public EffectEngine(){
+		types = new EffectType[EFFECT_COUNT];
+		//TODO MAdke difference effects
+		types[EFFECT_BLIP_YELLOW]= new EffectTypeSprite("img/blip.png",16,16);
+		types[EFFECT_BLIP_BLUE]= new EffectTypeSprite("img/blip.png",16,16);
+		types[EFFECT_EXPLODE]= new EffectTypeSprite("img/boom.png",16,16);
+		types[EFFECT_TEXT]= new EffectTypeText("",16,16);
+		//instances = new EffectInstance[EFFECT_INSTANCE_COUNT];
+		instances = [];
+		
+	}
+	
+	//TODO UPDATED TO JAVA WHEN NEEDED
+	void add(EffectInstance effect){
+		instances.push(effect);
+	}
+	void remove(int index){
+	//TODO JAVA
+		instances.splice(index,1);
+	}
+	
+	void CreateEffect(int x, int y, int dX, int dY, float speed, int type, int frame){
+		EffectInstance temp = new EffectInstance();
+		temp.x =x;
+		temp.y =y;
+		temp.speed = speed;
+		temp.frame = frame;
+		temp.endFrame =  floor(temp.getDistance(dX,dY)/speed);
+		temp.rot =temp.getDirection(dX,dY);
+		
+		temp.type= types[type%EFFECT_COUNT];
+		
+		add(temp);
+
+	}
+	void CreateEffect(string _text, int x, int y, int dX, int dY, float speed, int type, int frame){
+		EffectInstance temp = new EffectInstance();
+		temp.x =x;
+		temp.y =y;
+		temp.speed = speed;
+		temp.frame = frame;
+		temp.endFrame =  floor(temp.getDistance(dX,dY)/speed);
+		temp.rot =temp.getDirection(dX,dY);
+		temp._text = _text
+		temp.type= types[type%EFFECT_COUNT];
+		
+		add(temp);
+		
+	}
+	
+}
+public abstract  class EffectType{
+	int w;
+	int h;
+ 
+}
+public class EffectTypeText extends EffectType{
+	string effectText;
+	EffectTypeText(string Text, int _w,int _h){
+		w=_w;	
+		h=_h;
+		effectText = Text
+		
+		}
+	void draw(){
+ 
+ 	}
+	
+}
+
+public class EffectTypeSprite extends EffectType{
+	PImage[] frames;
+	Pimage sheet;
+	bool loop;
+	
+	int countX;
+	int countY;
+	int count;
+	
+	EffectTypeSprite(string sheetFile, int _w,int _h){
+		w=_w;	
+		h=_h;
+		
+		loop=true;	
+		sheet = loadImage(sheetFile);
+		
+		if(sheet== null){
+			counsole.log("cannot load ", sheetFile);
+		}
+		countX = floor(sheet.width/_w);
+		countY = floor(sheet.height/_h);
+		count = countX*countY;
+		
+		frames = new PImage[count];
+		for(var i = 0; i < countX; i++){
+			for(var j = 0; j < countY; j++){
+				frames[i*j+j] = sheet.get(i*w,j*h);
+			}
+		}
+		
+	}
+
+	void draw(int frame){
+		//TODO SPrites
+		if(count){
+			image(sheet,w/-2,h/-2,w,h);
+		
+		}
+		else{
+			rect(w/-2,h/-2,w,h);
+		}
+	}
+	
+}
+
+public class EffectInstance extends Renderable{
+ 	EffectType type;	
+ 	string _text;
+ 	int frame = 0;
+ 	int endFrame = -1;
+ 	void update(int i){
+ 		frame++;
+ 		
+ 		move();
+ 		if (frame >= endFrame && endFrame >=0){
+ 			Effects.remove(i);
+ 		}
+ 	}
+	//TODO 
+	void draw(){
+		pushMatrix();
+			translate(x,y);
+			
+			if(!_text){
+				rotate(rot);
+				type.draw(frame);
+			}
+			else{
+			text(_text,0,0);
+			}
+		popMatrix();
+	}
+ }
+
+

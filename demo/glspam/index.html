@@ -1,0 +1,198 @@
+<head>
+<script type="text/javascript" src="../processing-1.4.1.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+
+<title>gl spam tester</title>
+<script>
+	
+var playerX = 400;
+var playerY = 400;
+var whipRadius = 100;
+var whipDeltaS = 0.75;
+var whipDeltaA = 1;
+var whipRestFrames = 30;
+var whipRestoreTime =0;
+var grenadeSpeed =5;
+
+$("a[href=#go]").live("click", function(e){
+whipRestFrames = parseFloat($("#whipRestFrames").val());
+whipDeltaS = parseFloat($("#whipDeltaS").val());
+whipRestoreTime = parseFloat($("#whipRestoreTime").val());
+return false;
+});
+
+</script>
+
+
+<script id="script" type="application/processing" data-processing-target="display"> 
+var grenades=[
+	{
+		x:400,
+		y:500,
+		a: 0,
+		s: 5,
+		t: 150
+		}
+];
+var whips =[
+	{
+		x:400,
+		y:100,
+		last:0
+		}
+	];
+
+
+
+void setup() {
+	size(800,600); 
+	frameRate(30);
+}
+void draw(){
+	background(0);
+	
+	for(int i = 0;i < whips.length;i++){
+		fill(0,255,0,128);
+		ellipse(whips[i].x, whips[i].y,2* whipRadius,2* whipRadius);
+		fill(255);
+		text("W", whips[i].x, whips[i].y);
+	}
+	
+	
+	for(int i =0; i < grenades.length;i++){
+		if(grenades[i].t>0)
+		{
+	
+	
+			var closestWhip =null;
+			var distSq = 1000000;
+			var temp =0;
+		
+			for(int j = 0;j < whips.length;j++){
+				temp  = distsq(whips[j].x,  grenades[i].x,whips[j].y, grenades[i].y);
+				if( temp < distSq){
+					closestWhip = whips[j];
+					distSq =temp;
+					grenades[i].t += whipRestoreTime;
+				}
+			}
+	
+			if(distSq <= whipRadius *whipRadius 
+				&& closestWhip.last + whipRestFrames <= frameCount){
+				
+				closestWhip.last=frameCount;
+				//change the angle
+				grenades[i].a = getAngle(grenades[i],closestWhip);
+
+				//change the speed;
+				grenades[i].s = grenades[i].s* whipDeltaS;
+			
+			}
+		
+			grenades[i].x -= sin(grenades[i].a)* grenades[i].s;
+			grenades[i].y -= cos(grenades[i].a)* grenades[i].s;
+
+
+
+			fill(255,0,0);
+			ellipse(grenades[i].x,grenades[i].y, 5,5);
+	
+				
+		}
+		else{
+			if( grenades[i].t > -30){
+				fill(255,255,0);
+			  ellipse(grenades[i].x,grenades[i].y, abs(grenades[i].t)+5,abs(grenades[i].t)+5);
+			}
+		}
+		
+		grenades[i].t--;		
+	}
+	
+	
+	//player
+	fill(0,64,128);
+	ellipse(playerX, playerY, 25,25);
+	
+	
+	//infor about things
+	fill(255);
+	text("Grenade fuse:150 frames\nWhipRest: "+whipRestFrames+" frames\n framerate:"+frameRate,20,20);
+}
+
+float distsq(float x1, float x2, float y1, float y2){
+	return pow(x1-x2,2) + pow(y1-y2,2);
+}
+
+float getAngle( var g, var w){
+	float towhip = atan2(w.x -g.x, w.y-g.y);
+	
+	float plane = towhip + (PI/2);
+	float incidence=  g.a - plane;
+	float reflection = (plane - incidence)%TWO_PI;
+	//deal with internal reflection
+	if(reflection - towhip > PI/2 ){
+		console.log("internal reflection", reflection, towhip);
+		reflection += PI;
+	}
+
+	
+	console.log(towhip,  plane,g.a, incidence, reflection);
+	return reflection;
+}
+
+
+void mouseClicked(){
+
+	if(mouseButton == LEFT){
+		grenades.push({x: playerX, 
+			y:playerY, 
+			s : grenadeSpeed,
+			a:atan2(playerX-mouseX, playerY- mouseY),
+			t:150
+			});
+	 }
+	 else{
+	 	whips.push({
+	 		x:mouseX,
+	 		y:mouseY,
+	 		last: frameCount
+	 	
+	 	})
+	 }
+	 
+}
+
+void keyPressed(){
+	if(keyCode ==37){
+		playerX -=5;
+	}
+	if(keyCode ==39){
+	 playerX +=5;
+	}
+
+	if(keyCode ==38){
+	 playerY -=5;
+	}
+	if(keyCode ==40){
+	 playerY +=5;
+	}
+	console.log(keyCode);
+}
+ </script> 
+ </head>
+ <body>
+    <canvas id="display"></canvas>
+    <div id="instructions">
+			<p>left and right move the gl guy in blue (hold' em)<br/>left click shoots grenades<br/>Right click adds whips<br/> hit f5 to clean the whole thing<p>
+		</div>
+		<form>
+			<p>
+			Grenade speed chage on hit<input type="number"  id="whipDeltaS" value=".75"/><br/>
+			frames whips are idle between swipes<input type="number"  id="whipRestFrames" value="60"/><br/>
+			frames added to grenade fuse<input type="number"  id="whipRestoreTime" value="0"/><br/>
+			<a href="#go">Change values</a>
+			</p>
+		</body>
+</html>
+    

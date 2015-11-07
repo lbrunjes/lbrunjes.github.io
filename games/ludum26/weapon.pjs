@@ -1,0 +1,41 @@
+/*
+
+
+
+*/
+
+class weapon extends worldObject{
+	//todo
+	int projSpeed =30;
+	boolwan projFriendly =false;
+	int rof=1000;
+	int lastshot = rof *-1;
+	int ammo = 300;
+	
+
+	public weapon(){
+		x=0;
+		y =0;
+		w= 16;
+		h =8;
+		f=color(128);
+		s=color(0);
+	}
+	
+	public void fire(var origin, float angle){
+		if(lastshot +rof <= millis() && ammo !=0){
+			//create a relevant bullet and then set it going off that way.
+			effect b = new effect(origin[0],origin[1],
+			16,16,
+			projSpeed,angle);
+			b.friendly = projFriendly;
+			b.collides=true;
+			b.blocks =false;
+			thelevel.addEffect(b);
+			
+			lastshot =millis();
+			ammo--;
+		}
+	}
+	
+}

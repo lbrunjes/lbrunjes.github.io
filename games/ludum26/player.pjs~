@@ -1,0 +1,135 @@
+/*
+ the game character;
+
+
+
+*/
+class player extends worldObject{
+	int gender =0;
+	PImage skin = false;
+	PImage beard = false;
+	PImage hair = false;
+	PImage shoes = false;
+	PImage pants = false;
+	PImage shirt = false;
+	PImage head = false;
+	String name = false;
+	weapon wep;
+	
+	var pressed = {
+		left:false,
+		right:false,
+		up:false,
+		down:false
+	};
+	
+	public player(){
+		x=0;
+		y=0;
+		speed=40;
+		//wep = new weapon();
+		//wep.projFriendly =true;
+		collides =true;
+		friendly =true;
+		f = color(0,0,255);
+		s = color(255);
+	}
+	
+	public void handleKeyPress(int code, bool up){
+		
+		switch(code){
+			case 39:
+			case 68:
+				pressed.left=up;
+				
+			break;
+			case 37:
+			case 65:
+				pressed.right=up;
+			break;
+			
+			case 38:
+			case 87:
+				pressed.down =up;
+			break;
+			
+			case 40:
+			case 83:
+				pressed.up=up;
+			break;
+			
+			case 32://space
+			case 10://enter
+			
+
+			break;
+
+		}		
+		
+		if(pressed.left||pressed.right||pressed.up||pressed.down){
+			document.getElementById("steps").play();
+		}
+		else{
+			document.getElementById("steps").pause();
+		}
+		
+	
+	}
+	
+	public void update(float deltaT){
+		//var m = mouseWorldCoords();
+		
+//		r = atan2( y - m[1],x- m[0] );
+console.log(pressed);
+			if(pressed.right && canMove(x+speed*deltaT, y, this)){
+			
+					x+=speed*deltaT;
+				}
+				if(pressed.left && canMove(x-speed*deltaT, y, this)){
+					x-=speed*deltaT;
+				}
+				if(pressed.down && canMove(x, y+speed*deltaT, this)){
+					y+=speed*deltaT;
+				}
+				if(pressed.up && canMove(x, y-speed*deltaT, this)){
+					y-=speed*deltaT;
+				}
+
+		
+	}
+	
+	public void draw(){
+		fill(f);
+		stroke(s);
+		pushMatrix();
+			translate(x,y);
+			//rotate(r);
+			rectMode(CENTER);
+			if(r >0 && r <PI){
+				image(img.dude.back, w/-2,h/-2,w,h);
+			}
+			else{
+				image(img.dude.front,w/-2,h/-2,w,h);
+			}
+			
+			if(wep){
+				wep.draw();
+			}
+		popMatrix();
+	}
+	
+	public void click(){
+		
+	//	var bulletorigin = [x , y-h/2];
+	//	console.log(wep,bulletorigin);
+	//	if(wep){
+	//		wep.fire(bulletorigin, r);
+	//	}
+		
+	}
+	
+	public void onRemove(){
+		document.getElementById("ugh").play();
+		gameState = LOST;
+	}
+}

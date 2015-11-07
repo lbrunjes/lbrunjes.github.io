@@ -1,0 +1,31 @@
+About Diesel.js
+
+Diesel.js is an event driven html5 game engine.
+
+It is deisgned to make writing simple html 5 games simple, and provide a simple system of events that your game code can listen for to allow you to create a simple game. this means that unless your game code causes an error that make sthe game objects not start up correctly, diesel should keep pumping events out.
+
+Diesel provides:
+
+events
+	init - called before diesel starts up stuff.
+	startup - called after preloading finished
+	draw - called once per tick (# of ticks since last frame)
+	update -called once per tick (# of ticks since last frame)
+	
+some simple utilities
+	sprite engine
+	preload system
+	localStorage interface for json.
+	debug overlay (frame rates mouse coords etc);
+	
+
+It expects a game object defined in the global namespace.
+
+the game object is called at init time. All other diesel code should be agnostic to the existence of the game code.
+Basically if there are a certain properties they can be exploited to do preloading and the like. if not diesel should print a bunch of error messages and then startup anyway.
+
+
+Diesel API
+
+TODO:
+	I should work on the preloading / init system.

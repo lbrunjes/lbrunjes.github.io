@@ -1,0 +1,30 @@
+/*
+
+
+
+
+
+*/
+
+
+public class wall extends worldObject{
+
+	public wall(int _x, int _y){
+		x=_x;
+		y=_y;
+		f=color(200);
+		s=color(128);
+	}
+	
+	public bool inside(int _x , int _y, worldObject o){
+		if(abs(x - _x) < w/2+o.w/2 &&
+			 abs(y- _y) < h/2 + o.h/2){
+//			 noLoop();
+//			 console.log(this,o,_x,_y, x,y,w,h);
+			return true;
+		}
+		return false;
+	}
+	
+
+}

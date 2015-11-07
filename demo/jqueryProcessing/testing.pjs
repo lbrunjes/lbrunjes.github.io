@@ -1,0 +1,35 @@
+
+int lineHeight =100;
+
+void setup(){
+	size(400,200)
+	frameRate(10);
+	
+	//fill up the array
+	for(var i = 0 ;i<  showX;i++){
+		clicks.push(random()*50 -25);
+	}
+}
+
+void draw(){
+	background(255);
+	noFill();
+	stroke(0);
+
+	int stepX =width/showX;
+
+	for(var i = 0 ; i <clicks.length;i++){
+
+		if(i+1< clicks.length){
+			line(stepX*i, lineHeight - clicks[i], stepX*(i+1), lineHeight - clicks[i+1])
+		}
+		else{
+			fill(128);
+			ellipse(stepX*i, lineHeight - clicks[i], 3,3);
+		}
+
+	}
+
+
+
+}

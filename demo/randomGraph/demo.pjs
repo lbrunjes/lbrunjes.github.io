@@ -1,0 +1,101 @@
+var colors = {"bg": color(255), "a":color(0,255,0), "b":color(255,0,0), "c":color(0,0,255), "text":color(128), "line":color(128,128,128,128)};
+
+var slices = 1;
+var sliceWidth = 20;
+int maxSlices =maxRecords;
+var maxX= 620;
+var maxY = 460;
+var minY = 20;
+var minX = 20;
+var vmax=0;
+var vmin=100;
+var vscale = 1;
+
+
+void setup(){
+	size(640,320);
+
+	
+}
+
+void draw(){
+
+	background(colors.bg);
+	
+	//calculate vertical scale, since less than one pixel differences are not exciting.
+	for( var corp in stocks){
+	
+		if(stocks[corp].max> vmax){
+			vmax = stocks[corp].max;
+		}
+		if(stocks[corp].min < vmin){
+			vmin = stocks[corp].min;
+		}
+	}
+	//if we are negative use the bigger value
+	if(abs(vmin) > vmax){
+		vscale = (maxY-minY)/2 *.66/vmin;
+	}
+	else{
+		vscale =  (maxY-minY)/2 *.66/vmax;
+	}
+	
+	
+	//slice the horizontal into chunks so we can draw our stuff
+	slices = stocks["a"].values.length-1;
+	if(slices > maxSlices){
+		slices = maxSlices;
+	}
+	sliceWidth = (maxX- minX)/slices;
+	
+
+	
+	pushMatrix()
+		
+		// scale the lines to fit
+		//vertical translation
+		scale(1, vscale);
+		strokeWeight(1/vscale);
+		translate(0,  vmax*1.5);
+		//show with bigger numbers on top
+		scale(1,-1);
+		
+	
+		//draw the line for each stock
+		for(var i = slices ; i >0 ; i--){
+			for( var corp in stocks){
+				stroke(colors[corp]);
+				line(i* sliceWidth+minX, stocks[corp].values[i],(i-1)* sliceWidth+minX, stocks[corp].values[i-1]);
+			}
+		}
+		
+	popMatrix();
+	
+		if(mouseX> minX && mouseX<maxX){
+			//draw value of each stock in the moused over tick;
+			var curr_i = round((mouseX - minX)/sliceWidth);
+			var curr_x = mouseX;
+			if(mouseX> 500){
+				curr_x =500;
+			}
+		
+			//how long ago is it?
+			fill(colors.text);
+			text(((stocks["a"].values.length) - curr_i) * updateRate /1000 +" seconds ago", curr_x, minY );	
+		
+			//highlight where we are
+			fill(colors.line);
+				rect(mouseX -5, minY, 3,maxY);
+			
+			var count = 0;
+			for( var corp in stocks){
+				fill(colors[corp]);
+				count++
+				text( stocks[corp].name+": " +stocks[corp].values[curr_i], curr_x, minY +count *20 );
+			}
+		}
+}
+
+
+
+

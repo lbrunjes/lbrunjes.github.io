@@ -1,0 +1,388 @@
+<html>
+<head>
+<title>Randomly Build a Town</title>
+
+<script src="processing-1.3.6.js"></script>
+<script>
+var points=[];
+var buildings = [];
+var well = {"x":0,"y":0};
+var showDebugInfo = false;
+var clusterMin = 800,
+	clusterMax = 0,
+	clusterAverage=0,
+	clusterPct= 0;
+var walls =[];
+var gates = [];
+
+
+</script>
+<script type="text/processing" data-processing-target="graph">
+float SPREAD =1.1;
+float WALL_STEP =10;
+float WALL_CLEAR=15;
+
+class wallSegment{
+	var begin;
+	var end;
+	var height;
+	var gate;
+	float targetX;
+	float targetY;
+	
+	public wallSegment(tgtx,tgty, startangle,endangle,r){
+	
+		targetX = tgtx;
+		targetY = tgty;
+		
+		begin = {};
+		begin.a =startangle;
+		begin.r = r;
+		begin.x = sin(startangle)*begin.r+targetX;
+		begin.y = cos(startangle)*begin.r+targetY;
+		begin.cpX = sin((startangle-endangle)/4+startangle)*(begin.r)+targetX ;
+		begin.cpY = cos((startangle-endangle)/4+startangle)*(begin.r)+targetY;
+	
+		
+		
+
+		end = {
+			"x": sin(endangle)*r+tgtx,
+			"y":cos(endangle)*r+tgty,
+			"cpX":sin(endangle-(startangle-endangle)/4)*(r)+tgtx,
+			"cpY":cos(endangle-(startangle-endangle)/4)*(r)+tgty,
+			"r":r,
+			"a":endangle
+		};
+		
+		height = 10;
+		gate=false;
+	}
+	
+	bool contract( obstacles){
+		bool startOkay= true;
+		bool endOkay= true;
+		
+		var _begin = {};
+		_begin.a =begin.a;
+		_begin.r = begin.r - WALL_STEP;
+		_begin.x = sin(_begin.a)*_begin.r+targetX;
+		_begin.y = cos(_begin.a)*_begin.r+targetY;
+		_begin.cpX = sin((_begin.a-end.a)/4+_begin.a)*(_begin.r)+targetX ;
+		_begin.cpY = cos((_begin.a-end.a)/4+_begin.a)*(_begin.r)+targetY;
+		
+		for(var i = 0 ; i < obstacles.length;i++){
+			if(sqrt(pow(_begin.x - obstacles[i].center.x,2)+pow(_begin.y - obstacles[i].center.y,2)) <= obstacles[i].size.radius + WALL_CLEAR){
+				startOkay = false;
+			}
+		}
+		
+		
+		if(startOkay){
+		
+		 begin = _begin;
+		}
+		
+		var _end = {};
+		_end.a =end.a;
+		_end.r = end.r - WALL_STEP;
+		_end.x = sin(_end.a)*_end.r+targetX;
+		_end.y = cos(_end.a)*_end.r+targetY;
+		_end.cpX = sin((begin.a-_end.a)/4+_end.a)*(_end.r)+targetX ;
+		_end.cpY = cos((begin.a-_end.a)/4+_end.a)*(_end.r)+targetY;
+		
+		
+		//some sort of collsison detection
+	for(var i = 0 ; i < obstacles.length;i++){
+			if(sqrt(pow(_end.x - obstacles[i].center.x,2)+pow(_end.y - obstacles[i].center.y,2)) <= obstacles[i].size.radius + WALL_CLEAR ){
+				endOkay = false;
+			}
+		}
+		
+		
+		if(endOkay){
+		
+		 end = _end;
+		}	
+		
+		return startOkay || endOkay;
+	};
+	
+	void draw(){
+		stroke(128+12*height);
+		noFill();
+		strokeWeight(ceil(height/3));
+		//bezier(begin.x, begin.y, begin.cpX,begin.cpY, end.cpX,end.cpY,end.x,end.y);
+		line(begin.x,begin.y,end.x,end.y);
+		if(showDebugInfo){
+			text("b",begin.x,begin.y);
+		}
+		
+	}
+	
+}
+
+class building{
+var center;
+var entrance;
+var size;
+var rotation;
+
+
+public building(float x,float y){
+	//console.log("yeahhh");
+	center = {"x":x,"y":y};
+	size = {"x":round(random()*40+10),"y":round(random()*40+10)};
+	//todo randomly pick this too?
+	entrance = {"x":this.size.x/2 , "y": 0};
+	rotation = random()*TWO_PI;
+	size.radius = sqrt(pow(size.x/2,2)+pow(size.y/2,2));
+}
+
+public building(building b){
+	
+	size =  {"x":round(random()*40+10),"y":round(random()*40+10)};
+	size.radius = sqrt(pow(size.x/2,2)+pow(size.y/2,2));
+	rotation = random()*TWO_PI;
+	
+	this.center = {
+		"x": b.center.x + sin(this.rotation) * (b.size.radius + this.size.radius) *SPREAD,
+		"y": b.center.y +cos(this.rotation) * (b.size.radius + this.size.radius) *SPREAD
+	};
+	
+	//todo randomly pick this too?
+	entrance = {"x":this.size.x/2, "y": 0};
+	rotation = random()*TWO_PI;
+}
+
+
+
+void draw(){
+	pushMatrix();
+		translate(center.x, center.y);
+		
+		rotate(rotation);
+		fill(128);
+		rect(entrance.x, entrance.y, 5, 5);
+		noFill();
+		stroke(255);
+		rect(-1*size.x/2 ,-1*size.y/2, size.x, size.y);
+		rect(0,0,1,1);
+		if(showDebugInfo){
+			stroke(color(255,0,0));
+			ellipse(0,0,size.radius*2, size.radius*2);
+
+		}
+	popMatrix();
+	
+}
+bool intersectsAny(building[] list){
+	bool intersected =false;
+	
+	for(var i =0;i < list.length;i++){
+		if(sqrt(pow(list[i].center.x - this.center.x,2) + pow(list[i].center.y - this.center.y,2)) < SPREAD *(list[i].size.radius + this.size.radius)) {
+		
+			intersected = true;
+
+		}
+	}
+	
+	
+	return intersected;
+}
+
+}
+
+void setup(){
+
+	size(800,600);
+
+	//set up some houses
+	buildings.push(new building(width/2,height/2));
+	var tries=0;
+	var houses= 20;
+	for(var i = 0; i < houses;i++){
+		var temp =new building(buildings[buildings.length-1]);
+	
+		if(temp.intersectsAny(buildings)){
+	
+			//console.log("discarding");
+			tries++;
+			if(tries < houses*4){
+			i--;
+			}
+		}
+		else{
+			buildings.push(temp);
+		}
+	}
+
+	//set focal point, well.
+	well= new building(0,0);
+	well.size.x =10;
+	well.size.y=10;
+	well.draw= function(){
+		fill(color(0,0,255));
+		ellipse(this.center.x, this.center.y, 10,10);
+		
+		if(showDebugInfo){
+	
+			for(var i = 0; i < buildings.length; i++){
+			
+			//	stroke(color(255,0,0));
+			//	line(buildings[i].center.x,buildings[i].center.y, well.center.x, well.center.y);
+				stroke(color(128,0,0));
+				line(buildings[i].center.x,buildings[i].center.y, well.targetX, well.targetY);
+			}
+	
+		}
+	};
+
+
+	for(var i=0;i < buildings.length;i++){
+		well.center.x += buildings[i].center.x;
+		well.center.y += buildings[i].center.y;
+	}
+
+	well.center.x= well.center.x/buildings.length;
+	well.center.y = well.center.y/buildings.length;
+	
+	well.targetX = well.center.x;
+	well.targetY = well.center.y;
+
+	while(well.intersectsAny(buildings)){
+		var temp = new building(well);
+		well.center =temp.center;
+	}
+buildings.push(well);
+	
+	//min max and average distance to center point to determine how clustered we are
+	//console.log("clusterChecks)"+buildings.length);
+	for(var i = 0; i < buildings.length; i++){
+		var myMin = width,myMax = 0; mySum = 0;
+		for(var j = 0; j < buildings.length; j++){
+			if(i!=j){
+				var d= sqrt(pow(buildings[j].center.x - buildings[i].center.x,2) + pow(buildings[j].center.y - buildings[i].center.y,2));
+		
+			
+		
+				if(d< myMin){
+					myMin = d;
+				}
+				if(d > myMax){
+					myMax =d;
+				}
+				mySum +=d;
+				}
+		}
+		clusterMin += myMin;
+		clusterMax += myMax;
+		clusterAverage = mySum/(buildings.length -1);
+	}
+	clusterAverage = clusterAverage/buildings.length;
+	clusterMin = clusterMin/buildings.length;
+	clusterMax = clusterMax/buildings.length;
+	
+	// if we arent clustred much recude likly hood of wall. 
+	
+	clusterPct = sqrt(clusterAverage/(clusterMax -clusterMin));
+	
+	//do we have a wall?
+	
+	if(random() <= clusterPct){
+		//create a wall
+
+		
+		generateWall(true);
+		
+		
+	}
+	
+	document.getElementById("graph").focus();
+}
+void generateWall(autoContract){
+		var step = TWO_PI/(buildings.length*2);
+//come up witha better way to do this later.
+		for( var i = 0; i< buildings.length*2;i++){
+		
+			//console.log("created",well.targetX,well.targetY,step*i, step*(i+1) ,clusterMax);
+			var contracts=0;
+			var wall = new wallSegment(well.targetX,well.targetY,step*i, step*(i+1) ,clusterMax);
+			
+			while(contracts <20 && wall.contract(buildings) && autoContract){
+				//console.log(JSON.stringify(wall.begin), JSON.stringify(wall.end));
+				contracts++;
+			}
+			
+			walls.push(wall);
+			
+		}
+		
+}/*
+void findGates(){
+	var minLengthPct =2;
+	var madeGate= false
+	var longestSide;
+	//go thgouth the wall and find peics that jut deeply in ward
+	for(var i =0; i < walls.length;i++){
+		// if lenght between this and one f the nearby segments+ -2
+		//is less than half as long cut the invervening segments and add a gate
+		//should be based on wall qualiy etc
+		
+	}
+	
+	//if we havent found a gate, inset on on the longest side in the middles.
+}*/
+void keyPressed(){
+//console.log(key.code);
+if(key.code==32){
+	for(var i =0 ;i<walls.length;i++){
+		walls[i].contract(buildings);
+	}
+}
+if(key.code==10){
+ walls =[];
+ generateWall();
+}
+}
+
+void draw(){
+	background(0);
+	
+	strokeWeight(1);
+	for(var i = 0;i< buildings.length;i++){
+		buildings[i].draw();
+}
+for(var i = 0;i< walls.length;i++){
+		walls[i].draw();
+	
+}
+	fill(255);
+	if(showDebugInfo){
+	text("min:"+clusterMin,10,10);
+	text("max:"+clusterMax,10,30);
+	text("avg:"+clusterAverage,10,50);
+	}
+	text("Wall % Chance:"+ clusterPct,10,70);
+	if(walls.length > 0){
+	text("HAS Wall, space to contract",10,90);
+	}
+	else{
+	text("NO Wall,enter adds one anyway",10,90);
+	}
+	noFill();
+	
+
+
+}
+
+</script>
+
+</head>
+<body>
+
+<canvas id="graph">
+</canvas><br/>
+set showDebugInfo =true to see debug data.
+</body>
+</html>

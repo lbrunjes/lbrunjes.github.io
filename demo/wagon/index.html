@@ -1,0 +1,124 @@
+<html>
+<head>
+<title> Wagon simulator/calculator</title>
+<script>
+var items = [
+	{flag:1,id:"A",w:192,v:201},
+	{flag:2,id:"B",w:80,v:84},
+	{flag:4,id:"C",w:106,v:113},
+	{flag:8,id:"D",w:288,v:303},
+	{flag:16,id:"E",w:212,v:227},
+	{flag:32,id:"F",w:240,v:251},
+	{flag:64,id:"G",w:121,v:129},
+	{flag:128,id:"H",w:140,v:147},
+	{flag:256,id:"I",w:82,v:86},
+	{flag:512,id:"J",w:120,v:127},
+	{flag:1024,id:"L",w:137,v:144},
+	{flag:2048,id:"M",w:160,v:167}
+];
+
+var maxWeight= 1300;
+var output = {};
+var table ="<table><thead><tr><th>Items</th><th>Weight</th><th>Value</th><th>Over weight</th></tr></thead><tbody>";
+var itemList ="<table>";
+var getWagonValues = function(x){
+	
+	var start = 1;
+	var end = 4096;
+	
+	
+	
+	for(var i = start; i< end; i+= 0x1){
+		
+	
+		//convert int to weights and letters
+		var key = "";
+		var weight = 0;
+		var value = 0;
+		var overweight = false;
+		
+		for(var j=0; j<items.length;j++){
+			
+			
+			if(items[j].flag & i){
+				key+= items[j].id;
+				weight+= items[j].w;
+				value += items[j].v;
+			}
+		
+		}
+		//are we overweight?
+		overweight = weight> maxWeight;
+		//save it to the item.
+		output[key] = {"k":key, "w":weight, "v":value, "o":overweight};
+		//console.log(key);
+		
+		if(overweight){
+			table += "<tr class=\"overweight\"><td>"+key + "</td><td>"+weight + "</td><td>" +value+"</td><td>"+" " +overweight+"</td></tr>";
+		}
+		else{
+			table += "<tr><td>"+key + "</td><td>"+weight + "</td><td>" +value+"</td><td>"+" " +overweight+"</td></tr>";
+		}
+	}
+	
+	table +="</tbody></table>";
+	
+};
+
+getWagonValues();
+
+var getItemHtml= function(){
+itemList += "<table><tbody>";
+	for(var  i = 0; i < items.length; i+=4){
+	console.log(i);
+		itemList+= "<tr><td><strong>"+items[i].id+"</strong><br/>W: " + items[i].w +"<br/>V: "+items[i].v+"</td>"+
+				"<td><strong>"+items[i+1].id+"</strong><br/>W: " + items[i+1].w +"<br/>V: "+items[i+1].v+"</td>"+
+				"<td><strong>"+items[i+2].id+"</strong><br/>W: " + items[i+2].w +"<br/>V: "+items[i+2].v+"</td>"+
+				"<td><strong>"+items[i+3].id+"</strong><br/>W: " + items[i+3].w +"<br/>V: "+items[i+3].v+"</td></tr>";
+	}
+	itemList += "</tbody></table>";
+	
+}
+getItemHtml();
+</script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script src="jquery.tablesorter.min.js"></script>
+<script>
+$(document).ready(function() 
+    { 
+    		$("#tabledata").html(table);
+        $("table").tablesorter({ sortList: [[2,1]]}); 
+        $("#items").html(itemList);
+        
+    } 
+);
+</script>
+<style>
+	tr.overweight{
+		display:none;
+	}
+	#items{
+		background:#fff;
+		position:fixed;
+		width:25%;
+		top:5%;
+		right:0%;
+	}
+	#graph{
+		background:#fff;
+		position:fixed;
+		width:25%;
+		top:5%;
+		right:25%;
+	}
+</style>
+</head>
+<body>
+<div id="items">
+</div>
+<div id="tabledata">
+</div>
+<canvas id="graph">
+</canvas>
+</body>
+</html>

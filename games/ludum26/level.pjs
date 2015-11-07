@@ -1,0 +1,189 @@
+/*
+
+
+
+
+
+*/
+
+
+public class level{
+
+	public goal Goal;
+	public var walls = [];
+	public var enemies = [];
+	public var effects = [];
+	public int w = width;
+	public int h = height;
+	public int next = false;
+	public string nextFloor="start";
+	
+	
+	public level(){
+		this.load(firstLevel);
+	/*
+
+			Goal = new goal(0, -200);
+		
+			wall tmp = new wall(0,-64);
+			tmp.w=96;
+
+			walls.push(tmp);
+			for (int i = 0; i < 20 ; i++){
+				tmp = new wall(random() *w - width, random()*h- height);
+				if((tmp.x > 64 || tmp.x<-64 ) && (tmp.y>64 || tmp.y<-64)){
+					walls.push(tmp);
+				}
+			}
+			enemies.push(new enemy(-100,-100, [[-200,-100],[100,-100]],20));
+			
+			
+		
+	*/
+	}
+	
+	public void load(string jsonname){
+			reset();	
+			if(!jsonname){
+				this= new level();
+				return;
+			}
+			var js = loadStrings("lvl/"+jsonname+".js");
+			
+
+		
+			var full ="";
+			for(int i =0; i< js.length; i++){
+				full+=js[i];
+			}
+			
+			//run teh level js.
+			js = JSON.parse(full);
+			
+//			console.log(js);
+			Goal = new goal(js.goal.x, js.goal.y);
+			
+			walls=[];
+			var wl =false;
+			for(int i = 0; i < js.walls.length;i++){
+				wl = new wall(js.walls[i].x,js.walls[i].y);
+				
+				if(js.walls[i].w){
+					wl.w = js.walls[i].w;
+				}
+				if(js.walls[i].h){
+					wl.h = js.walls[i].h;
+				}
+				walls.push(wl);
+			}
+			
+			if(js.goalIsLast == true){
+				Goal.last =true;
+			}
+			else{
+				nextFloor = js.nextFloor;
+			}
+			enemies = [];
+
+			for(int i = 0; i < js.enemies.length;i++){
+				var tmp = new enemy(js.enemies[i].x,js.enemies[i].y, js.enemies[i].path, js.enemies[i].speed);
+				if(js.enemies[i].nowep){
+					tmp.wep =false;
+				}
+				enemies.push(tmp);
+			}
+	
+			h = js.height;
+			w = js.width;
+	}
+	
+	
+	
+	public void draw(){
+		pushMatrix();
+//			translate(player.x, player.y);
+			fill(222);
+			rect(0,0,w,h);
+			image(img.stairsBack,-16,-16,32,32);
+		popMatrix();
+		Goal.draw();
+		for(int i = 0; i < walls.length; i++){
+			walls[i].draw();
+		}
+	}
+	
+	public void update(float delta){
+	
+		void rm = [];	
+		for(int i = 0; i < effects.length;i++){
+			effects[i].update(delta);
+			if(effects[i].collides){
+				if(!effects[i].friendly){
+					effects[i].collide(player);
+				}
+				else{
+					for(int j = 0; j < enemies.length;j++){
+						effects[i].collide(enemies[j]);
+					}
+				}
+			}
+			if(effects[i].remove){
+				rm.push(i);
+			}
+		}
+	
+		removeEffects(rm);
+		rm =[];
+	
+		for(int i = 0; i < enemies.length;i++){
+			enemies[i].update(delta);
+			if(enemies[i].collides){
+				enemies[i].collide(player);
+			
+				//effects already removed all the fun times.
+			
+			}
+			if(enemies[i].remove){
+				rm.push(i);
+			}
+		}
+		removeEnemies(rm);
+
+		if(Goal.collide(player)){
+				if(Goal.last){
+					gameState =WON;
+				}
+				else{
+					gameState = CHARACTER;
+					console.log("gooing to ", nextFloor);
+					load(nextFloor);
+				}
+		}
+	}
+	void reset(){
+	//	console.log("reset");
+		player.x = 0;
+		player.y=0;
+		player.remove =false;
+		effects = [];
+		//level.enemies =[];
+		theticket =false;
+	}
+	void addEffect(effect e)
+	{
+		effects.push(e);
+	}
+	void removeEffects(var rmlist)
+	{
+		for(int i = rmlist.length -1 ;i >=0 ;i--){
+			effects.splice(rmlist[i],1)[0].onRemove();
+		}
+	}
+	void removeEnemies(var rmlist)
+	{
+		for(int i = rmlist.length -1 ;i >=0 ;i--){
+			enemies.splice(rmlist[i],1)[0].onRemove();
+		}
+	}
+
+}

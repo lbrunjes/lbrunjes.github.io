@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+<title>Housemark -  Buttons  Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script>
+ $("ul a, nav a").live("click", function(e){
+	alert("you clicked a button");
+	return false;
+ });
+</script>
+<link rel="stylesheet" type="text/css" href="http://housemark.co/css/housemark-default.css?v=1.0" media="all"/>
+
+	<style type="text/css">
+	/* Make the stylesheet play nice.*/
+	article div{
+	clear:both;
+	}
+	a:hover{
+		background:transparent;
+	}
+	/*demo css*/
+	#myAwesomeNav, #myAwesomeNavHover{
+	list-style:none;
+	display:block;
+	padding:1ex;
+	margin:0;
+	
+	}
+	#myAwesomeNav li, #myAwesomeNavHover li{
+		float:left;
+		padding:1ex 1em;;
+		margin:0 1em;
+		text-align:center;
+	}
+
+	#myAwesomeNavHover li:hover{
+	 background:#0f0;
+	}
+	#myAwesomeNavHover li a:hover{
+	 color:#f00;
+	}
+	h1{clear:both;}
+
+	nav{
+	padding:1em;
+	}
+	nav a{
+	 margin:0 1em;
+	 padding:1ex 1em;
+	}
+	nav a:hover{
+	background:#0f0;
+	color:#f00;
+	}
+
+	
+	</style>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-24373547-1']);
+  _gaq.push(['_setDomainName', '.Housemark.co']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</head>
+<body>
+<div id="content">
+	<header>
+		<a href="/"><img src="http://housemark.co/images/translogo_fff.png" alt="housemark logo" id="mainlogo"/></a>
+	</header>
+	<article style="text-align:left;">
+	<div>
+		<h1>Buttons Demo</h1>
+		
+			
+		<h3>How it starts</h3>
+		<p>This is here to show off how this started off</p>
+		<ul id="myAwesomeNav">
+			<li><a href="#wooo">Favorites</a></li>
+			<li><a href="#help">Help</a></li>
+			<li><a href="#Email">Read your email</a></li>
+		</ul>
+	</div>
+	<div>
+		<h3>The Problem</h3>
+		<p>See how these buttons are not always red text witha green background when hovered? If the text isn't red teh button doesn't go</p>
+		<ul id="myAwesomeNavHover">
+			<li><a href="#wooo">Favorites</a></li>
+			<li><a href="#help">Help</a></li>
+			<li><a href="#Email">Read your email</a></li>
+		</ul>
+		</div>
+	<div>
+		<h3>Doing it right</h3>
+		<p>Note that the buttons here are always red text when the back ground is green? It means they are working</p>
+		<nav>
+			<a href="#wooo">Favorites</a>
+			<a href="#help">Help</a>
+			<a href="#Email">Read your email</a>
+		</nav>
+	</div>
+</article>
+
+
+</body>
+</html>

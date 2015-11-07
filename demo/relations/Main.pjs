@@ -1,0 +1,61 @@
+
+
+
+
+void setup(){
+	size(800,400);
+	background(0);
+	
+	for(var i =0; i < 8;i++){
+		dudes.push({
+		"name":"android "+i,
+		"emo": new EmotionalState()
+		});	
+	}
+	for(var i =0; i < 8;i++){
+		for(var j = 0; j< dudes.length ;j++){
+			if(j != i){
+				lines.push({"viewer":i, "viewee":j, "emo": new EmotionalState(random() *20 -10,random() *20 -10, random() *20 -10,random() *20 -10), "str": random()});
+			}
+		}
+	}
+}
+
+void draw(){
+	background(0);
+	fill(255);
+	stroke(255);
+	
+	line(0,30,width,30);
+	line(0,70,width,70);
+	text("ME:", 5, 50);
+	for( var i = 0; i <  dudes.length;i++){
+		dudes[i].emo.draw(50+i*100, 50,10);
+		fill(255);
+		text(dudes[i].name,25 + 100*i,25);		
+	}
+ 	
+ 	int currentDude =floor(mouseX/100);
+
+ 	for(var i = 0; i < lines.length;i++){
+ 		if(lines[i].viewer == currentDude ){
+ 			temp = dudes[currentDude].emo.Multiply(lines[i].emo, lines[i].str)
+ 			console.log(50 + currentDude*100, 90+40*lines[i].viewee);
+ 			
+ 			stroke(temp.cOverall);
+ 			strokeWeight(5);
+ 			line(50 + currentDude*100, 90+40*lines[i].viewee, 50 + lines[i].viewee *100, 90+40*lines[i].viewee);
+ 			strokeWeight(1);
+ 			fill(temp.cOverall);
+ 			lines[i].emo.draw(50+currentDude*100, 90+40*lines[i].viewee, 15);
+ 			stroke(255);
+ 			fill(0);
+ 			ellipse(50+ currentDude*100, 90+40*lines[i].viewee, 18,18);
+ 			fill(255);
+ 			text(lines[i].viewee,47 + currentDude*100, 95+40*lines[i].viewee)
+ 			
+ 			temp.draw(50 + lines[i].viewee *100, 95+40*lines[i].viewee, 20);
+			
+ 		}
+ 	}
+}

@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+
+
+<script type="text/javascript" src="../processing-1.4.1.js"></script>
+<script type="text/javascript" src="Point.js"></script> 
+<script type="text/javascript" src="VEdge.js"></script> 
+<script type="text/javascript" src="VEvent.js"></script> 
+<script type="text/javascript" src="VParabola.js"></script> 
+<script type="text/javascript" src="VQueue.js"></script>
+<script type="text/javascript" src="VPolygon.js"></script>
+<script type="text/javascript" src="Voronoi.js"></script>  
+<script>
+
+var v  = new Voronoi();
+var points = [];
+var edges;
+var cells;
+</script>
+<script type="text/processing" data-processing-target="canvas">
+
+
+void setup(){
+ size(512,512);
+ 
+	setupMap();
+	
+	
+	
+	
+}
+void setupMap(){
+points =[];
+for(i=0; i<36; i++)
+	{
+		points.push(new Point(Math.random()*width, Math.random()*height));
+		
+	}
+	v.Compute(points, width, height);
+	edges = v.GetEdges();
+	cells = v.GetCells();
+	
+	
+	//Run a river or two
+	int river_start = floor(random() * edges.length);
+	int riverlength =1;
+	console.log("river starts on side"+river_start); 	
+	edges[river_start].water =true;
+	edge next = pickNextEdge(edges[river_start].end);
+	while(next && riverlength < floor(points.length *1.66) ){
+		riverlength++;
+		//console.log("r@",next);
+		next.water =true;
+	
+		if(!next.reverse){
+			next = pickNextEdge(next.end);
+		}
+		else{
+			next = pickNextEdge(next.start);
+		}
+	}
+	
+	
+	//find any lakes
+	for(int i = 0; i < cells.length;i++){
+		boolean landside =false;
+		for(int j = 0; j < cells[i].vertices.length; j++){
+			if(!isInWaterEdge(cells[i].vertices[j])){
+				landside = true;
+			}
+		}
+		if(!landside){
+			cells[i].lake =true;
+			altitude = 0;
+		}
+	}
+	
+	//adjust heights based on lakes
+	//at this point the lakes are all set.
+	///find adjeacent heights.
+	
+	
+}
+
+
+edge pickNextEdge(Point p){
+	var possible = [];
+	for(int i=0; i <  edges.length;i++){
+		if( !edges[i].water ){
+		
+			if(edges[i].start.x == p.x && edges[i].start.y == p.y){
+				edges[i].reverse =false;
+				possible.push(edges[i]);
+			}
+			if(edges[i].end.x == p.x && edges[i].end.y == p.y)
+			{
+				edges[i].reverse =true;
+				possible.push(edges[i]);
+			}
+		}
+	}
+	//console.log( "possible", possible); 	
+	if(possible.length>0){
+	
+		return possible[ floor(possible.length * random())];
+	}
+	return false;
+}
+
+boolean isInWaterEdge(Point p){
+	boolean water = false;
+	for(int i=0; i < edges.length; i++){
+		if(edges[i].water){
+			if((edges[i].start.x == p.x && edges[i].start.y == p.y) ||
+			(edges[i].end.x == p.x && edges[i].end.y == p.y)
+			)
+			{
+				water = true; 
+				i = i+ edges.length;
+			}
+		}
+	
+	}
+	
+	return water;
+}
+
+
+void draw(){
+	translate(5,5);
+	scale(0.9,0.9);
+	background(0);
+	fill(255);
+	stroke(255);
+	
+	for(int i=0; i<cells.length; i++){
+		beginShape();
+		fill( 64+25* cells[i].altitude,255,64+ 36*cells[i].altitude);
+		if(cells[i].lake){
+			fill(0,0,255);
+		}
+		for(int j = 0 ; j < cells[i].vertices.length; j++){
+			vertex(cells[i].vertices[j].x,cells[i].vertices[j].y);
+		}
+		endShape(CLOSE);
+		fill(255);
+		text(i, cells[i].vertices[0].x,cells[i].vertices[0].y);
+		text(i, points[i].x,points[i].y)
+	
+	}
+	noFill();
+	for(i=0; i<edges.length; i++)
+	{
+		stroke(255);
+		if(edges[i].water){
+			stroke(0,0,255);
+		}
+		
+		line(edges[i].start.x, edges[i].start.y,edges[i].end.x, edges[i].end.y);
+	}
+
+
+	if(frameCount %100 == 0){
+		setupMap();
+	}
+
+}
+
+</script>
+</head>
+<body>
+<p>http://blog.ivank.net/voronoi-diagram-in-javascript.html</p>
+<canvas id="canvas" style="background:#555;"></canvas>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<title>Chance Hoggan's  code </title>
+<script src="../processing-1.4.0.js"></script>
+<script type="text/processing" data-processing-target="graph"> 
+/* @pjs preload="temp.jpg, temp2.jpg"; */
+
+int pos;
+boolean start;
+int screenSize;
+PImage img;
+PImage img1;
+
+
+
+void setup() 
+  {
+  size(1100, 733);
+  img  = loadImage("temp.jpg");
+  img1  = loadImage("temp2.jpg");
+  image(img, 0, 0);
+  screenSize = width * height;
+  pos = 0;
+  frameRate(10);
+ 
+  }
+  
+void draw(){
+loadPixels();
+img1.loadPixels();
+
+ 
+  
+    for (int x = 0; x < width; x ++ ) 
+		{
+   		int loc = pos * width + x;
+  
+   		color r = red(img1.pixels[loc]);
+   		color g = green(img1.pixels[loc]);
+   		color b = blue(img1.pixels[loc]);
+		
+		color cp = img1.get(x, pos);
+		//println(cp);
+		
+
+   
+   		pixels[loc] = cp * 1 ;
+   		}
+ 
+ 	pos = pos + 1;
+ 	
+  updatePixels();
+}
+</script>
+<style>
+body{
+	text-align:center;
+}
+</style>
+</head>
+<body>
+<canvas id="graph"></canvas>
+</body>
+</html>
+

@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+<head>
+<title>Platformer</title>
+<script>
+/*
+This is teh base game object taht contains all the game data..
+
+*/
+var game ={
+	container:"game",
+	version:"v 0.2",
+	width: 640,
+	height: 480,
+	fontsize:16,
+	font:"16px silkscreen ,sans-serif",
+	mans :3,
+	gravity:256,
+	up:0,
+	down: Math.PI,
+	left: Math.PI/2,
+	right: Math.PI/2*3,
+	score: 0,
+	keys:{
+		"left":65, //a
+		"right":68, //d
+		"jump":32,//space
+		"fire":17, //lcrtrl
+		"use":69, //e 
+		"down":66
+	},
+	keysDown:{
+		"left":false, 
+		"right":false, 
+		"jump":false,
+		"fire":false, 
+		"use":false,
+		
+		"down":false
+	},
+	settings:{
+		screen:"menu",
+		level:0,
+		dataDirectory:"data",
+		lastLevel :8
+	},
+	
+	context:{
+		back:false,
+		main:false,
+		vfx:false
+	},
+	setup:function(){
+		//load keys if saved.
+		var keys= diesel.load("__keys");
+		if(keys){
+		
+			game.keys = keys;
+		}
+		else{
+			console.log("no key saved using defaults");
+		}
+		
+		game.objects.player = new game.objects.player();
+	},
+	events:{
+		"click":function(evt){
+			if(game.screens[game.settings.screen] &&
+					game.screens[game.settings.screen].click){
+
+				game.screens[game.settings.screen].click(evt);
+			}
+			else{
+				game.context.vfx.fillText("No Scene: "+game.settings.screen, diesel.mouseX, diesel.mouseY);
+				evt.preventDefault();
+			}
+		},
+		"screenChange":function(event){
+			var from = event.args[0], to = event.args[1], transition = event.args[2]|| false;
+			console.log(from, to, transition);
+
+			game.screens[from].close();
+			if(transition){
+				game.screens[transition].reset(from, to);
+				game.screens[transition].open();
+				game.settings.screen = transition;
+			}
+			else{
+				game.screens[to].reset();
+				game.screens[to].open();
+				game.settings.screen = to;
+			}
+		
+		},
+		"keydown":function(event){
+			if(game.screens[game.settings.screen] &&
+					game.screens[game.settings.screen].keydown){
+				game.screens[game.settings.screen].keydown(event);
+			}
+			
+		},
+		
+		"keyup":function(event){
+				if(game.screens[game.settings.screen] &&
+					game.screens[game.settings.screen].keyup){
+				game.screens[game.settings.screen].keyup(event);
+			}
+
+		},
+		"levelFinished":function(event){
+			game.settings.level++;
+			
+
+			// check for end game etc
+			if(game.settings.level <= game.settings.lastLevel){
+				// save game
+				diesel.save("__current",{"mans":game.mans,
+			 "level":game.settings.level,
+			 "score":game.score});
+				//change level
+				diesel.raiseEvent("screenChange","level","level");
+			}
+			else{
+				diesel.raiseEvent("screenChange","level","wongame");
+			}
+
+			
+		},
+		"collision":function(event){
+			//console.log("collision",event);
+			game.mans --;
+			
+			if(game.mans === 0){
+				diesel.raiseEvent("screenChange","level","gameover");
+			}
+			else{
+				game.screens.level.reset();	
+			}
+			
+		},
+		
+		"effectcollides":function(event){
+			event.args[1].onHit(event.args[0]);
+			event.args[0].onCollision(event.args[1]);
+		},
+		"shakedown":function(event){
+			//eventargs[0] ==player;
+			//event.args[1] ==  robbed unit.
+		}
+		
+	},
+
+	objects:{
+		//for 
+	},
+	screens:{
+		// used to draw a screen
+	},
+	assets:{
+		tiles:[],
+		entities:[null,//0
+		null,//start
+		function(player){ //end
+			if(game.screens.level.intel >= game.screens.level.current.intel){
+				diesel.raiseEvent("levelFinished",player);
+			}
+			else{
+			var e = new game.objects.effects.text(player.x, player.y, game.up, "You need more intel to exit");
+			e.color = "rgba(255,255,255,.75)";
+			e.speed =0;
+			e.maxFrames = 2;
+			e.framesPerFrame =1;
+			game.screens.level.effects.push(e);
+			}	
+		},
+		function(player){ //intel
+			var x = Math.floor(player.x/ game.screens.level.grid);
+			var y = Math.floor(player.y/ game.screens.level.grid);
+			game.screens.level.captureIntel(x,y);
+		},
+		function(player){//objects
+			if(game.keysDown.use){
+				var x = Math.floor(player.x/ game.screens.level.grid);
+				var y = Math.floor(player.y/ game.screens.level.grid);
+				game.screens.level.hackMachine(x,y);
+			}
+		
+		}
+		]
+	},
+	preload:[
+		{"image":"logo.png"},
+		{"image":"mountain.png"},
+		{"image":"grenada.png"},
+		{"image":"moscow.png"},
+		{"image":"hospital.png"},
+		{"image":"mogadishu.png"},
+		{"sprite":"tiles.png","size":[32,32],"keys":{},"frames":1},
+		{"sprite":"ents.png","size":[32,32],"keys":{},"frames":4},
+		{"sprite":"player.png","size":[32,32],"keys":{"walk":0},"frames":4},
+		{"sprite":"floater.png","size":[32,32],"keys":{"walk":0},"frames":4},
+		{"sprite":"wanderer.png","size":[32,32],"keys":{"walk":0},"frames":4},
+		{"sprite":"nobody.png","size":[32,32],"keys":{"walk":0},"frames":4},
+		{"sprite":"crawler.png","size":[32,32],"keys":{"walk":0},"frames":4}
+	],
+	util:{
+		"getLevel":function(id){
+			console.log("laoding level", id);
+			var lvl =diesel.ajax("level/"+id+".json");
+			game.screens.level.current = JSON.parse(lvl);
+			
+		
+		
+		}
+	},
+	state:{
+	
+	}
+};
+
+</script>
+<script src="diesel.js"></script>
+<script src="js/prototypes.js"></script>
+<script src="js/game.js"></script>
+<script src="js/screens.js"></script>
+<link rel="stylesheet"  href="game.css" media="all"/>
+<!--
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-24373547-1']);
+  _gaq.push(['_setDomainName', '.Housemark.co']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>-->
+</body>
+
+</head>
+<body>
+<div id="container">
+	<div id="game">
+		<canvas id="back"></canvas>
+		<canvas id="main"></canvas>
+		<canvas id="vfx"></canvas>
+	</div>
+</div>
+</html>

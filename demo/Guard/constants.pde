@@ -1,0 +1,119 @@
+/* 
+	Constants.pde
+
+
+*/
+
+
+int TEXT_SIZE = 16;
+int TITLE_SIZE = 24;
+
+int THINK_RATE = 10;//Num frames between thinks
+
+int GS_INTRO = 0;
+int GS_OFFER = 1;
+int GS_MISSION = 2;
+int GS_MISSION_WIN = 3;
+int GS_MISSION_LOSE = 4;
+int GS_MENU = 5;
+
+int MENU_NEW = 0;
+int MENU_SAVE = 1;
+int MENU_LOAD = 2;
+int MENU_NEXT = 3;
+int MENU_QUIT = 4;
+
+int NO_INIT = -1;
+
+int SPACE =32;
+
+int PATH_WEIGHT =32;
+int WAGON_H =96;
+int WAGON_W =64;
+
+int GUARDS_MAX = 3;
+float GUARD_SPACING =0.3;
+int WAGON_ROUND =10;
+int WAGON_MAX_RADIUS = 256;
+
+
+
+int PERSON_RADIUS = 16;
+
+int TARGET_MAX_RANGE = 512;
+int BANDIT_MAX_RANGE=512;
+int BANDIT_SHOOTS_WAGON = -2;
+int BANDIT_WAGON_CONTACT_RADIUS = 48;
+
+int BANDIT_TYPE_SHIP=0;
+int BANDIT_TYPE_ASTEROID=1;
+int BANDIT_TYPE_CRUISER=2;
+int BANDIT_TYPE_GUN=3;
+int BANDIT_TYPE_CARRIER=4;
+
+int UI_BIAS_X = 1210;
+int UI_BIAS_Y = 96;
+int UI_BIAS_R = 50;
+int UI_BIAS_I = 10;
+
+int UI_SPREAD_X = 1160;
+int UI_SPREAD_Y = 160;
+int UI_SPREAD_W = 100;
+int UI_SPREAD_H = 16;
+int UI_SPREAD_I = 1;
+
+int UI_THROTTLE_X = 1202;
+int UI_THROTTLE_Y = 192;
+int UI_THROTTLE_W = 16;
+int UI_THROTTLE_H = 100;
+
+int UI_PAUSE_X = 30;
+int UI_PAUSE_Y = 46;
+int UI_PAUSE_W = 50;
+int UI_PAUSE_H = 50;
+
+
+
+
+int TEAM_GUARD=1;
+int TEAM_BANDIT=0;
+
+color COLOR_MENU_TEXT = color(255);
+color COLOR_MENU_DISABLED = color(64);
+color COLOR_MENU_SELECTED = color(0,255,0);
+color COLOR_MENU_STROKE = color(0,255,0);
+
+
+color COLOR_PATH_FILL = color(255,255,255,64);
+color COLOR_PATH_STROKE = color(255,255,255,32);
+color COLOR_ACTIVE_PATH_STROKE = color(0,0,255,96);
+color COLOR_WAGON_FILL = color(0,0,255,128);
+color COLOR_WAGON_STROKE = color(0,0,255);
+color COLOR_GUARD_FILL = color(0,255,0,128);
+color COLOR_GUARD_STROKE = color(0,255,0);
+color COLOR_BANDIT_FILL = color(255,0,0,128);
+color COLOR_BANDIT_STROKE = color(255,0,0);
+color COLOR_BANDIT_ASTEROID_FILL = color(255,255, 255, 128);
+color COLOR_BANDIT_ASTEROID_STROKE = color(255);
+
+color COLOR_UI_FILL = color(255,0,0,128);
+color COLOR_UI_STROKE = color(255,0,0);
+color COLOR_UI_INIDICATOR_FILL = color(255,255, 255, 128);
+color COLOR_UI_INIDICATOR_STROKE = color(255);
+
+int CRITICAL_MULTIPLIER =2;
+float FALLOFF_PCT=0.5;
+
+int WEAPON_COUNT  =4;
+int WEAPON_NONE = -1;
+int WEAPON_YELLOW_LASER = 0;
+int WEAPON_BLUE_LASER = 1;
+int WEAPON_BANDIT_LASER = 2;
+int WEAPON_ASTEROID = 3;
+
+
+int ARMOR_COUNT = 3;
+int ARMOR_NONE = 0;
+int ARMOR_BASIC= 1;
+int ARMOR_COOL= 2;
+

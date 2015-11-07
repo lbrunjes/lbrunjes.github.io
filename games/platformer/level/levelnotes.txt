@@ -1,0 +1,60 @@
+level cheat sheet
+
+intle is the number ol intel block you need to touch before you can exit the level.
+
+blocks >0 are soldi with textures 
+blocks <0 are non solid with textures 
+
+units are defend by type and then x y coord.
+
+backgroudn is a statick image and prensntly music is ignored.
+
+Entities call functions in game.assets.entities base ont ehri abs aid
+
+-1 is level start
+-2 is level end
+-3 intel
+-4 hackable location
+-5 intel from hacks must be +/- 2.5 squares of the hack to be found.
+-6 use to deploy item/get intel/to be defined by level.
+-7 ladder
+
+Level List:
+Basic training.
+	running, 1
+	jumping 2
+	falling to your death 3
+Advanced:	
+	bad guys 
+	hacking 
+	shakedowns 
+Grenada:
+	first level
+	second
+	shakedowns
+	??
+Moscow.
+	hack prototype weapon.
+	Bug teh kremlin 
+	flee armed guards /	escape the country via =fishing boats. 9?
+	
+Cuba.
+	plant exploding cigars 9
+	deploy anti mustache agent. 10
+	Write us propaganda on walls 11
+	escape country by getting on raft 12
+	
+the 90s.
+	investigate x files 3
+	montior arms trafficing. 6
+	wag the dog 9
+	
+War on terror:
+	locate terrorists( thi smissin repeates foever adding intel every time);
+	
+
+	
+
+	
+
+	

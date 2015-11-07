@@ -1,0 +1,115 @@
+/*@pjs preload="img/blip.png, img/boom.png, img/pilot.png, img/background.png, img/midground.png"*/
+
+/*
+
+	todo setupa  class for a dude
+	setup the wagon
+	setup the level
+*/
+//import globals.pde
+///import constants.pde
+///import input.pde
+//import missions.pde
+//import draw.pde
+//import combat.pde
+//import renderable.pde
+//import guy.pde
+
+
+
+InputManager Input;
+RenderSystem Draw;
+Mission CurrentMission;
+CombatSystem Combat;
+Guard[] AllGuards;
+int[] SelectedGuards;
+//EffectEngine Effects;
+
+
+
+
+void setup(){
+	//console.log("setup starts");
+	
+	size(1280,720);
+	background(0);
+	fill(255);
+	
+	//init globals
+	GameState = GS_INTRO;
+	MenuSelected = MENU_NEW;
+	MissionId =0;
+	paused = true;
+	LoadMission = false;
+	
+	//setup systems
+	Input = new InputManager();
+	Draw = new RenderSystem();
+	Combat = new CombatSystem();
+	AllGuards = new Guard[10];
+	SelectedGuards=new int[GUARDS_MAX];
+	for(var i = 0; i < AllGuards.length;i++){
+		AllGuards[i] = new Guard("Steve"+i,0,  96, PI, 10, ceil(100*random()), 35,1,1);
+		if(i < GUARDS_MAX)
+		{
+			SelectedGuards[i]=i;
+		}
+	}
+	Effects = new EffectEngine();
+	
+	
+	textSize(TEXT_SIZE);
+	
+	//to do load sprites
+	
+	//TODO IN JAVA REMOVE THIS LINE
+	document.getElementById("graph").focus();
+	paused = false;
+	
+	//console.log("setup ends");
+}
+
+void draw(){
+	
+	if(LoadMission){
+		LoadCurrentMission(MissionId);
+	}	
+	
+	Draw.background();
+
+	switch(GameState){
+		case GS_INTRO:
+			Draw.drawIntro();
+		break;
+		case GS_OFFER:
+			Draw.drawOffer();
+		break;
+		case GS_MISSION:
+			Draw.drawMission();
+		break;
+		case GS_MISSION_WIN:
+			Draw.drawMissionSuccesss();
+		break;
+		case GS_MISSION_LOSE:
+			Draw.drawMissionFailed();
+		break;
+		case GS_MENU:
+			Draw.drawMenu();
+		break;
+		
+		default:
+			Draw.GameState = GS_MENU;
+		break;
+	}
+	
+}
+
+
+void LoadCurrentMission(int missionId){
+//	console.log("LOPAD",missionId,CurrentMission);
+	CurrentMission = new Mission(missionId);
+//	console.log("DONE",missionId,CurrentMission);
+	LoadMission = false;
+}
+
+

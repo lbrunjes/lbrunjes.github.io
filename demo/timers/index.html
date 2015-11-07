@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<script src ="../processing-1.4.1.js"></script>
+<script type ="text/processing" data-processing-target="canvas">
+
+int startFrame = 0;
+int startMilli = 0;
+int framePerAdvance =5;
+int millisPerAdvance = 50;
+int numBoxes =50;
+
+
+void setup(){
+size(500,200);
+
+}
+
+void draw(){
+	//clear stuff
+	background(0);
+
+	for(int i = 0 ; i < numBoxes; i++){
+		//draw frame based animation
+		if( Math.floor((frameCount-startFrame )/ framePerAdvance) % numBoxes >= i){
+			fill(0,255,0); 
+		}
+		else{
+			fill(255,255,255);
+		} 
+		rect( i*10 +1, 20, 8,18);
+		
+		//draw milllis based animation
+		if( Math.floor((millis() -startMilli) / millisPerAdvance) % numBoxes >= i){
+			fill(255,0,0); 
+		}
+		else{
+			fill(255,255,255);
+		} 
+		rect( i*10 +1, 0, 8,18);
+	}
+	fill(255,255,255);
+	textSize(20);
+	text("red is millis based   green is frame based", 0,40, 500,20);
+	text("press the matching button to reset the cycle", 0,60, 500,20);
+	
+	
+	fill(255,0,0);
+	rect( 80, 100, 80,80);
+	
+	fill(0,255,0);
+	rect( 340, 100, 80,80);
+	
+	//fill(0,0,255);
+	//rect( 210,100,80,80);
+	
+}
+
+void mousePressed(){
+
+	//reset the millis
+	if(mouseX >=80 && mouseX <=160 && mouseY>100 &&mouseY <=180){
+		startMilli = millis();
+		console.log("reset millis")
+	}
+	if(mouseX >=340 && mouseX <=420 && mouseY>100 &&mouseY <=180){
+		startFrame = frameCount;
+		console.log("reset startCount");
+	}
+	
+	//if(mouseX >=210 && mouseX <=100 && mouseY>100 &&mouseY <=180){
+	//
+	//}
+}
+
+</script>
+</head>
+<body>
+<canvas id="canvas">
+</canvas>
+<p>This is a demo of simple timers. They reset on an event.</p>
+</body>
+</html>
+

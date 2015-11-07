@@ -1,0 +1,61 @@
+/*
+
+
+
+
+
+*/
+
+
+class movie{
+	float chartime = 100;
+	int frame =0;
+	int lastchangeMillis =0;
+	int start=0;
+	
+	public movie(){
+	//	console.log("new movie");
+		start=millis();
+		lastchangeMillis=start;
+	}
+	
+	var subtitles = [
+		"So, It has come to this.",
+		"Our rivals, ancient enemies, The Windows Admins",
+		"have gone too far.  They have struck the heart of our empire",
+		"the snack machine is no longer on the unix network",
+		"Physical inspection revealed that the machine is abesnt",
+		"We believe that it has been moved to their den.",
+		"It falls to you young admin to go on a quest",
+		"a quest to deliver snacky cakes from their closed source oppresssion",
+		"They will try to track you by the ticketing system",
+		"Avoid creating new tickets. Avoid users.",
+		"New tickets must be closed from your desk to avoid suspicion.", 
+		"They are monitoring all of us now.",
+		"Good luck"
+	];
+	
+	public void draw(){
+		if(subtitles[frame].length*chartime + lastchangeMillis < millis()){
+			frame++;
+			lastchangeMillis= millis();
+			console.log(subtitles[frame]);
+			if(frame >= subtitles.length){
+				gameState = CHARACTER;
+				return;
+			}
+		}
+		background(0);
+		if(img.intro && img.intro[frame]){
+			image(img.intro[frame],0,0,width,height);
+		}
+		fill(255);
+		text(subtitles[frame], width/4, height - 24);
+		
+		
+		
+		
+	}
+
+}
+

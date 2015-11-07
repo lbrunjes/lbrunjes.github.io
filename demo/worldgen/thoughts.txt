@@ -1,0 +1,25 @@
+get a voronoi diagram of the world.
+
+get endges and end points.
+
+pick water courses
+
+genreate high map
+
+pick passable edges.
+
+assigne each tile a biome
+
+pick a central chunk as teh town.
+
+generate pathing tree from town outward.
+
+generate town.
+
+populate stuff in each voronoi tile
+
+
+if needed sudivide the tiless  it turtles all teh way down here
+
+
+

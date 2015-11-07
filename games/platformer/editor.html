@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+	<title> Platform Level Editor</title>
+	<link rel="stylesheet"  href="game.css" media="all"/>
+	<script>
+	var game={
+			settings:{
+				dataDirectory:"data",
+				screen:"editor"
+			},
+			container:"game",
+			width:800,
+			height:600,
+			screens:{},
+			fontsize:16,
+			font:"16px silkscreen ,sans-serif",
+			setup:function(){
+				console.log("setup");
+				document.getElementById(game.container).height =game.height;
+			},
+			events:{
+				mouseup:function(e){
+		
+				},
+				mousedown:function(e){
+				
+				},
+				mousemoved:function(e){
+					game.events.click(e);
+				},
+				keydown:function(e){
+					if(e.keyCode == 37){
+						game.screens.editor.offset.x -=16;
+					}
+					if(e.keyCode == 39){
+						game.screens.editor.offset.x +=16;
+					}
+					if(e.keyCode == 38){
+						game.screens.editor.offset.y +=16;
+					}
+					if(e.keyCode == 40){
+						game.screens.editor.offset.y -=16;
+					}
+				},
+				process:function(e){
+				
+				},
+				"click":function(evt){
+					if(game.screens[game.settings.screen] &&
+							game.screens[game.settings.screen].click){
+
+						game.screens[game.settings.screen].click(evt);
+					}
+				}
+			
+			},
+			preload:[
+			{"sprite":"tiles.png","size":[32,32],"keys":{},"frames":1},
+			{"sprite":"ents.png","size":[32,32],"keys":{},"frames":4}
+			]
+		}
+	var level ={
+		"background":"",
+		"music":"",
+		"intel":3,
+		"intro": [],
+		"world":[
+		[3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		],
+		"units":[],
+		"effects":[]
+	};
+	</script>
+	<script src="diesel.js"></script>
+	<script src="js/prototypes.js"></script>
+	<script src="js/editor.js"></script>
+	<style>
+		#controls{
+			text-align:left;
+			
+		}
+		#controls div{
+			display:inline-block;
+			vertical-align:top;
+			v-align:top;
+		}
+		#controls div label,controls div input{
+			display:inline;
+		}
+		input{
+			width:4em;
+		}
+		input.long{
+			width:20em;
+		}
+	</style>
+	
+</head>
+<body>
+<div id="container">
+	<div id="game" style="width:800px; height:600px;">
+		<canvas id="back"></canvas>
+		<canvas id="front"></canvas>
+	</div>
+	<div style="clear:both"></div>
+	<div id="controls">
+		<div><label for="intel">intel<label><input name="intel" id="intel" type="intel" type="number" value="3"/></div>
+		<div><label for="background">background<label><input name="background" id="background" type="text" class="long" /></div>
+		<div><label for="music">music<label><input name="music" id="music" type="music"  class="long"/></div>
+		<div><label for="intro">intro<label><textarea name="intro" id="intro" type="intro"></textarea></div>
+	
+	</div>
+
+	</div>
+	<div id="output">
+	</div>
+</div>
+</body>
+</html>

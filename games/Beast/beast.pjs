@@ -1,0 +1,746 @@
+/*
+
+
+BEAST.PJS
+
+Lee Brunjes 2012
+
+lee@housemark.co
+
+
+*/
+var version = 0;
+var _SPACE =32;
+var _LEFT=37;
+var _RIGHT =39;
+var _UP=38;
+var _DOWN=40;
+var beasts= {
+"b":{"push":false,"icon":"├┤","color":color(255,0,0), "move": true,"score":10},
+"s":{"push":false,"icon":"╟╢","color":color(255,0,0), "move": true,"score":20},
+"h":{"push":true,"icon":"╬╬","color":color(255,0,0),"move": true,"score":40},
+"e":{"push":false,"icon":"oo","color":color(255,0,0),"move": false,"score":15},
+"0":{"push":false,"icon":"  ","color":color(0,128,0),"move": false},
+"1":{"push":false,"icon":"▓▓","color":color(0,128,0),"move": false},
+"2":{"push":false,"icon":"██","color":color(255,255,0),"move": false},
+"p":{"push":true,"icon":"◄►","color":color(0,255,255),"move": true, "score":-5},
+
+};
+var blocks=[
+{"push":false,"open":true,"icon":"  ","color":color(0,128,0)},
+{"push":true,"open":false,"icon":"▓▓","color":color(0,128,0)},
+{"push":true,"open":false,"icon":"██","color":color(255,255,0)},
+];
+var levels = [
+{"blocked":4,"pull":false, "destroy":false,"hatchTime":60, "b":1,"s":0,"e":0,"burning":false},
+{"blocked":5,"pull":false, "destroy":false,"hatchTime":60, "b":2,"s":0,"e":0,"burning":false},
+{"blocked":6,"pull":false, "destroy":false,"hatchTime":60, "b":3,"s":0,"e":0,"burning":false},
+{"blocked":4,"pull":false, "destroy":false,"hatchTime":60, "b":4,"s":0,"e":1,"burning":false},
+{"blocked":5,"pull":false, "destroy":false,"hatchTime":60, "b":5,"s":0.125,"e":0,"burning":false},
+{"blocked":6,"pull":false, "destroy":false,"hatchTime":45, "b":6,"s":0.125,"e":1,"burning":false},
+{"blocked":7,"pull":false, "destroy":false,"hatchTime":45, "b":6,"s":0.125,"e":1,"burning":false},
+{"blocked":8,"pull":false, "destroy":false,"hatchTime":30, "b":6,"s":0.25,"e":1,"burning":true},
+
+];
+var inputDelay =50;
+var lastInput = 0;
+var canThink = false;
+var pressedKeys={};
+var score = 0;
+var livesAfterLevels = 3;
+var units =[];
+var mapX =40;
+var mapY =30;
+var level =0;
+var blockPct=.5;
+var charWidth=24;
+var charHeight=20;
+var map = [];
+
+var fpsCap = 100;
+var thinkRate = floor(fpsCap/2);
+var mapStart =0;
+Pfont font = loadFont("Monospace");
+
+var moveRepeat = 100;
+var pidx= -1;
+var lives = 1;
+
+var playerCollision = 0;
+
+void setup(){
+	setupMap();
+	
+	
+	textFont(font, 16);
+	size(mapX*charWidth,(mapY+1)*charHeight);
+	
+	frameRate(fpsCap);
+	mapStart=millis();
+	document.getElementById("beast").focus();
+}
+
+
+void draw(){
+	background(color(0));
+	
+	units=[];
+	for(var i =0; i < map.length;i++){
+		if(map[i] =="b" || map[i] =="s" || map[i] =="e" || map[i] =="h" ){
+			units.push(i);
+		}
+
+
+			fill(beasts[map[i]].color);
+			text(beasts[map[i]].icon, i% mapX * charWidth, floor(i/mapX)*charHeight, charWidth,charHeight);
+			
+	}
+	
+	drawFooter();
+	
+	
+	//move the player
+	handleInput();
+
+	
+	//calculate the beasts moves
+	if(frameCount% thinkRate ==0){
+		think();
+	}
+	
+	
+	gameStateUpdates();
+}
+
+void drawFooter(){
+fill(color(255));
+	rect(0,mapY*charHeight, width, -2);
+	
+	text(   
+	"    PBEAST     LEVEL "+(level+1)+" OF " +levels.length+
+	"    BEASTS: "+units.length+
+	"    LIVES: "+lives +
+	"    SCORE: "+score +
+	"    TIME: "+round((millis() - mapStart)/1000)
+	 , 0, height -2);
+}
+/*
+
+Changes to the game state
+
+*/
+
+void gameStateUpdates(){
+	if(units.length ==0){
+		level++;
+		if(level%livesAfterLevels ==0){
+			lives++;
+		}
+		beasts.e.icon ="oo";
+		setupMap();
+		
+	
+	}
+	if( floor((millis() - mapStart)/1000) >=  levels[level].hatchTime - 10){
+		beasts.e.icon ="OO";
+	
+	}
+	if(!canThink){
+		fill(0,0,0,128);
+		rect(0,0,width,height);
+		fill(color(255));
+		textAlign(CENTER);
+		text("PPPP    BBBB    EEEEEE    AA      SSSS  TTTTTT\n"+
+			"PP  PP  BB  BB  EE      AA  AA  SS        TT  \n"+
+			"PPPP    BBBB    EEEEEE  AA  AA    SS      TT  \n"+
+			"PP      BB  BB  EE      AAAAAA      SS    TT  \n"+
+			"PP      BBBB    EEEEEE  AA  AA  SSSS      TT  ",width/2,100);
+		
+		
+		text("\"BECASE GRAPHICS SUCK\"",width/2, 220);
+		text("SQUASH BEASTS. ",width/2, 260);
+		
+		if(frameCount%5 >0){
+		text("PRESS ANY KEY TO START",width/2, 300);
+		}
+		textAlign(LEFT);
+		noLoop();
+	}
+	
+	if(level>= levels.length){
+	
+		if(levels.length > 32 && random() > .75){
+		//You win.
+			noLoop();
+			fill(0,0,0,128);
+		rect(0,0,width,height);
+			fill(color(255));
+			text("YOU WIN",100,100);
+			text("FRANKLY, I AM SHOCKED",120,120);
+			text("YOUR MAGNIFICENT SCORE: "+score,120,140);
+		}
+		else{
+			var temp = levels[levels.length-1];
+			console.log(JSON.stringify(temp));
+			temp.b++;
+			temp.e++;
+			temp.s = 1-(1-temp.s)/2;
+			console.log(JSON.stringify(temp));
+			
+			levels.push(temp);
+			setupMap();
+			
+
+		}
+	}
+	if(playerCollision){
+		lives--;
+		playerCollision = 0;
+		
+		var idx= floor(random()* map.length)
+		 map[idx] ="p";
+		 pidx = idx;
+		 fill(color(255));
+		 text("██", idx%mapX, floor(idx/mapX));
+		
+		
+	
+	}
+	
+	if(lives<=0){
+		//to lose
+		noLoop();
+		fill(0,0,0,128);
+		rect(0,0,width,height);
+		fill(color(255));
+		text("YOU LOSE, GOOD DAY SIR",100,100);
+		text("SPACE TO RESTART",120,120);
+		text("YOUR PUNY SCORE: "+score,120,140);
+	  }
+
+}
+
+/*
+Movements
+
+*/
+void handleInput(){
+	bool dragging = false;
+	
+	if(pressedKeys[_SPACE]){
+		dragging = true;
+	}
+	
+	if(lastInput + inputDelay < millis()){
+		lastInput = millis();
+		//console.log(pidx);
+		if(pressedKeys[_UP] ){
+			pidx = move(pidx, pidx- mapX);
+		
+		
+		}
+	
+		if(pressedKeys[_DOWN]  ){
+			pidx= move(pidx,pidx+ mapX);
+		
+		}
+	
+		if(pressedKeys[_LEFT]   ){
+		
+			pidx = move(pidx, pidx - 1);
+		}
+		if(pressedKeys[_RIGHT]    ){
+			pidx = move(pidx, pidx +1);
+		}
+	}
+}
+ 
+void keyReleased(){
+if(pressedKeys[_UP] || pressedKeys[_DOWN]  ||pressedKeys[_LEFT]  || pressedKeys[_RIGHT]    ){
+			lastInput = millis() - inputDelay;
+		}
+}
+
+
+void move(idx,dst,ignoreCheck){
+	
+	var me = map[idx];
+	
+	if(ignoreCheck || canMove(idx,dst,me)){
+		map[idx]=0;
+		map[dst] = me;
+		
+		return dst;
+	}
+	return idx;
+}
+
+
+void canMove(idx,dst, t){
+	var okay =true;
+	
+	//remove unpossible moves
+	if(	dst < 0 || 
+		dst >= map.length||
+			(
+				dst + mapX != idx &&
+				dst + mapX + 1 != idx &&
+				dst + mapX - 1 != idx &&
+				dst - mapX != idx &&
+				dst - mapX + 1 != idx &&
+				dst - mapX - 1 != idx &&
+				dst + 1 != idx &&
+				dst - 1 != idx
+			)
+		){
+		okay = false;
+	}
+
+	else{
+		if(map[dst]!= 0 && map[dst]!= 1 && map[dst]!= 2){
+		
+			if(t=="p" || map[dst]=="p"){
+				//player dies on contact with beasts including eggs
+				playerCollision = 1;
+			}
+			else{
+				//beasts cant be on teh same square.
+				okay=false;
+			}
+		}
+		
+		else{
+			//not a string meaning a map type
+			var spaceFound = 0;
+		 	var tgtmin = -1;
+		 	var tgtmax = map.length;
+		 	var inc = dst - idx;
+		 	var lineLimit = abs(inc)==1;
+		 	if(lineLimit){
+		 		tgtmax = idx + (mapX -idx%mapX);
+		 		tgtmin = idx - (idx%mapX )-1;
+		 	}
+		 	
+			switch(map[dst]){
+				case 0:
+					if(lineLimit &&floor(dst/mapX) != floor(idx/mapX)){
+						okay=false;
+					}
+				break;
+				case 1:
+				if(beasts[t] && beasts[t]["push"]){
+				 	//at this point we need to go down the line and see if there is an open space
+				 	
+				 	for(int i = dst ; i > tgtmin && i < tgtmax && (!lineLimit?true :floor(i/mapX) == floor(idx/mapX)); i += inc){
+		
+			 			switch(map[i]){
+			 				case 0:
+			 					map[i]=1;
+			 					i = tgtmin - inc;
+			 					spaceFound++;
+			 				break;
+			 				case 2:
+					 		  okay=false;
+					 		  i =tgtmin -inc;
+					 		  spaceFound++;
+					 		break;
+			 				case "h":
+			 				case "e":
+			 				case "b":
+			 					if(map[i + inc]==1 ||map[i+ inc]==2 || i + inc <= tgtmin || i + inc >=tgtmax){
+			 					score += beasts[map[i]].score;
+			 					map[i]=1;
+			 					i = tgtmin - inc;
+			 					spaceFound++;
+			 					}
+			 					else	{
+			 						okay=false;
+			 						i = tgtmin - inc;
+			 						spaceFound++;
+		 						}
+			 				break;
+			 				case "s":
+			 					if(map[i + inci + inc]==2 || i + inc <=tgtmin || i + inc >=tgtmax){
+				 					score += beasts[map[i]].score;
+				 					map[i]=1;
+				 					i=tgtmin - inc;
+				 					spaceFound++;
+			 					}
+			 					else
+			 					{
+			 						okay=false;
+			 						i= tgtmin - inc
+			 						
+		 						}
+			 				break;
+			 				case "p":
+			 				if(map[i + inc]==1 ||map[i+ inc]==2 || i + inc <= tgtmin || i + inc >=tgtmax){
+			 					score += beasts[map[i]].score;
+			 					map[i]=1;
+			 					i = tgtmin - inc;
+			 					spaceFound++;
+			 					playerCollision =2;
+			 					}
+			 					else	{
+			 						okay=false;
+			 						i = tgtmin - inc;
+			 						spaceFound++;
+		 						} 
+			 				break;
+			 			}
+				 		
+				 	}
+				 	
+				 	//did we hit the endge with out finding an option?
+				 	if(spaceFound == 0 && !levels[level].burning){
+				 		okay=false;
+				 	}
+				}
+				else	{
+				 	okay=false;
+				}
+			 break;
+			 
+			 case 2:
+				 okay=false;
+			 break;
+			}
+		}
+	}
+	return okay;
+}
+
+
+
+/*
+*
+*Key press functions
+*
+*
+*/
+void keyPressed(){
+	if(!canThink){
+		canThink=true;
+		loop();
+	}
+	if(!pressedKeys[keyCode]){
+	pressedKeys[keyCode] = {"pressed":millis(),"processed":0};
+	}
+	//console.log(keyCode);
+	if(lives <=0 && keyCode ==32){
+
+	 level = 0;
+	 lives = 1;
+	 score = 0;
+	 setupMap();
+	 loop();
+	}
+	
+	if(pressedKeys[76] && pressedKeys[69] && pressedKeys[66]  ){
+		beasts.p.icon ="☺/";
+	}
+}
+void keyReleased(){
+	pressedKeys[keyCode] =false;
+}
+/*
+Dumb AI.
+
+*/
+void think(){
+if(!canThink){
+	return 0;
+}
+for{var i = 0; i < units.length;i++){
+			var me  = map[units[i]];
+			var newIdx = units[i];
+			if(beasts[me].move){
+				
+				//try to move me to the player;
+			
+				
+				var moved =false;
+				if(pidx < units[i]){
+					if(pidx%mapX < units[i]%mapX){
+						//left
+						move(units[i], units[i] -1 );
+						moved = units[i] != newIdx;
+						//up-left
+						if(!moved && random() <.5){
+							move(units[i], units[i] - mapX -1);
+							moved = units[i] != newIdx ;
+						}
+						//up
+						if(!moved && random() <.5){
+							move(units[i], units[i] - mapX);
+							moved = units[i] != newIdx ;
+						}
+						//up right
+						if(!moved && random() <.5){
+							move(units[i], units[i] - mapX +1);
+							moved = units[i] != newIdx ;
+						}
+						//right
+						if(!moved && random() <.5){
+							move(units[i], units[i] +1 );
+							moved = units[i] != newIdx;
+						}
+						//down
+						if(!moved && random() <.5){
+							move(units[i], units[i] + mapX);
+							moved = units[i] != newIdx;
+						}
+					}
+					else{
+						if(pidx%mapX < units[i]%mapX){
+							//right
+							
+								move(units[i], units[i] +1 );
+								moved = units[i] != newIdx;
+							
+							//up
+							if(!moved && random() <.5){
+							move(units[i], units[i] - mapX);
+							moved = units[i] != newIdx ;
+							}
+							//left
+							if(!moved && random() <.5){
+								move(units[i], units[i] -1 );
+								moved = units[i] != newIdx;
+							}
+							//down
+							if(!moved && random() <.5){
+								move(units[i], units[i] + mapX)
+								moved = units[i] != newIdx;
+							}
+						}
+						else{
+							//up
+							move(units[i], units[i] - mapX);
+							moved = units[i] != newIdx ;
+							//up right
+							if(!moved && random() <.5){
+								move(units[i], units[i] - mapX +1);
+								moved = units[i] != newIdx ;
+							}
+							//right
+							if(!moved && random() <.5){
+								move(units[i], units[i] +1 );
+								moved = units[i] != newIdx;
+							}
+							//up left
+							if(!moved && random() <.5){
+								move(units[i], units[i] - mapX +1);
+								moved = units[i] != newIdx ;
+							}
+							//left
+							if(!moved && random() <.5){
+								move(units[i], units[i] -1 );
+								moved = units[i] != newIdx;
+							}
+							//down
+							if(!moved && random() <.5){
+								move(units[i], units[i] + mapX)
+								moved = units[i] != newIdx;
+							}
+						}
+					}
+				}
+				else{
+					if(pidx%mapX < units[i]%mapX){
+						//left
+							move(units[i], units[i] -1 );
+							moved = units[i] != newIdx;
+						//down left
+						if(!moved && random() <.5){
+							move(units[i], units[i] + mapX -1);
+							moved = units[i] != newIdx ;
+						}
+						//down
+						if(!moved && random() <.5){
+							move(units[i], units[i] + mapX);
+							moved = units[i] != newIdx;
+						}
+						//down right
+						if(!moved && random() <.5){
+							move(units[i], units[i] + mapX +1);
+							moved = units[i] != newIdx ;
+						}
+						//right
+						if(!moved && random() <.5){
+							newIdx = move(units[i], units[i] +1 );
+							moved = units[i] != newIdx;
+						}
+						//up
+						if(!moved && random() <.5){
+							move(units[i], units[i] - mapX);
+							moved = units[i] != newIdx ;
+						}
+					}
+					else{
+						if(pidx%mapX > units[i]%mapX){
+							//right
+								newIdx = move(units[i], units[i] +1 );
+								moved = units[i] != newIdx;
+							//down right
+							if(!moved && random() <.5){
+								move(units[i], units[i] + mapX +1);
+								moved = units[i] != newIdx ;
+							}
+							//down
+							if(!moved && random() <.5){
+							move(units[i], units[i] + mapX);
+							moved = units[i] != newIdx;				
+							}
+							//down right
+							if(!moved && random() <.5){
+								move(units[i], units[i] + mapX -1);
+								moved = units[i] != newIdx ;
+							}
+							//left
+							if(!moved && random() <.5){
+								move(units[i], units[i] -1 );
+								moved = units[i] != newIdx;	
+							}
+							//up
+							if(!moved && random() <.5){
+								move(units[i], units[i] - mapX);
+								moved = units[i] != newIdx ;
+							}
+						}
+						else{
+							//down
+							move(units[i], units[i] + mapX);
+							moved = units[i] != newIdx;
+							//down right
+							if(!moved && random() <.5){
+								move(units[i], units[i] + mapX +1);
+								moved = units[i] != newIdx ;
+							}				
+							//right
+							if(!moved && random() <.5){
+								move(units[i], units[i] +1 );
+								moved = units[i] != newIdx;
+							}
+								//down left
+							if(!moved && random() <.5){
+								move(units[i], units[i] + mapX -1);
+								moved = units[i] != newIdx ;
+							}
+							//left
+							if(!moved && random() <.5){
+								move(units[i], units[i] -1 );
+								moved = units[i] != newIdx;	
+							}
+							//up
+							if(!moved && random() <.5){
+								move(units[i], units[i] - mapX);
+								moved = units[i] != newIdx ;
+							}
+						}
+					}
+				}
+				
+				units[i] = newIdx;
+			}
+			else{
+				//we are an egg
+				//should we hatch?
+				if(me == "e" && (millis() - mapStart) /1000 > levels[level].hatchTime){
+					map[units[i]] = "h";
+				}
+				
+			}
+		
+		
+		}
+	
+}
+
+/*
+
+SETUP FUCNTIONS
+
+
+
+*/
+
+void setupMap(){
+	console.log("setting up level "+level);
+	if(level>=levels.length){
+		return;
+	}
+	map=[];
+	beasts.e.icon ="oo";
+	for(var i =0 ;i< mapX*mapY; i++){
+
+		//pushable blocks
+		if(random()> blockPct){
+
+			map.push(1)
+		}
+		else
+		{
+			map.push(0);
+		}
+	}
+	//player
+	 //TODO initially safe?
+	 if(pidx <0){
+		 var idx= floor(random()* map.length)
+		 map[idx] ="p";
+		 pidx = idx;
+	 }
+	 else{
+	 map[pidx]="p";
+	 }
+	 
+	//solid blocks
+	var numBlocked = 0;
+	//convert some of teh blocks to solid blocks
+	while(numBlocked < levels[level].blocked ){
+		var idx=floor(random() * map.length);
+		if(map[idx] ==1){
+			map[idx]++;
+			numBlocked++;
+		}
+	
+	}
+	
+	//beasts
+	var numBeasts = 0;
+///	add beasts
+	while(numBeasts < levels[level].b ){
+		var idx=floor(random()* map.length);
+		if(map[idx] ==0){
+			if(random <= levels[level].s){
+				map[idx]="s";
+			}else{
+				map[idx]="b";
+			}
+			numBeasts++;
+			 units.push(idx);
+		}
+	
+	}
+	
+
+	numBeasts = 0;
+	//add eggs
+	while(numBeasts < levels[level].e ){
+		var idx=floor(random()* map.length);
+		if(map[idx] ==0){
+			map[idx]="e";
+			numBeasts++;
+			 units.push(idx);
+		}
+	
+	}
+	
+	 //map start time for eggs/
+	mapStart = millis();
+}
+
+void mousePressed(){
+	text("BAM!!! ARROW KEYS.", mouseX,mouseY)
+}

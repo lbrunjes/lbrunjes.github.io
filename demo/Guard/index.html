@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+<title>PixelPusher</title>
+<script src="../processing-1.4.0.js"></script>
+<script>
+var theMissions=[
+	
+	{ rating:1,name:"MILK RUN",description:"Escort a wagon full of milk to the people of townsville.\n This way they will grow up to have healthy bones.\n Watch out for asteroids in the shipping path\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue  box controls the speed of the blue ship",
+		 waypoints:[[100,100],[500,1000],[1000,100] ],
+		bandits:[[300,300,1],[500,500,1],[250,250,1], [700,700,1],[600,600,1],[500,300,1],[400,250,1]]
+	},
+	{ rating:1,name:"Mixing things up",description:"Let's add some bandits to the mix and see how it turns out.\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue box controls the speed of the blue ship",
+		 waypoints:[[100,100],[500,700],[900,10],[1200,300] ],
+		bandits:[[300,400,0],[400,300,0],[400,100,1],[300,200,1],[100,400,1],[300,300,1], [350,700,1],[600,660,1],[650,300,1],[900,350,1], [1000,100,1],[1100,300,1]]
+	},
+	{rating:1,name:"The line",description:"A Quick Misssion to turna  quick buck.\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue  box controls the speed of the blue ship",
+		 waypoints:[[100,100],[1200,1200] ],
+		bandits:[[300,400,0],[400,300,0],[300,280,1],[289,340,1],[400,400,1],[300,300,1], [350,700,1],[600,660,1],[650,300,1],[900,350,1], [1000,100,1],[1100,300,1]]
+	},
+	{rating:1,name:"The Sling Shot",description:"Let's add a bandit cruiser to the mix and see how it turns out.\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue  box controls the speed of the blue ship",
+		 waypoints:[[100,1100],[550,700], [600, 600], [500,300], [200, 0]],
+		bandits:[[200,800,1],[200,100,1],[400,600,1],[700,700,1],[399,100,1],[0,900,1], [350,200,1],[600,800,1],[650,300,1],[600,720,0],[580,730,0], [250,400,2]]
+	},
+	{rating:1,name:"The Saw",
+	description:"Added Bandit sentries.\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue  box controls the speed of the blue ship",
+		 waypoints:[[0,500],[500,1000], [1000, 0], [1500,700], [2000, 200], [2500, 500]],
+		bandits:[[100,500,1],[200,600,1],[300,700,1],[400,500,1],[500,700,1],[600,900,1], [700,600,1],[700,500,3],[800,800,1],[900,400,1],[1000,200,1],[1100,400,1],[1200,500,1],[1300,600,1] ,[1400,700,1],[1500,800,1],[1600,700,1],[1700,600,1],[1800,500,1],[1900,400,1],[2000,300,1],[2100,400,1],[2200,500,1], [1000,100,3]]
+	},
+	{rating:1,name:"The Race",
+	description:"Escape the bandit trap!!\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue  box controls the speed of the blue ship",
+		 waypoints:[[0,0],[1500,500]],
+		bandits:[[950,400,1],[1050,350,1],[900,375,1],[1000,350,1],[1000,300,3], [1000,400,3],[-520,0,2],[0,-520,2]]
+	},
+	
+	
+	{
+		reward:20, length:2000, rating:5,
+		name:"DOOM",
+		description:"a seocnd mission.\n You know so we can make sure the UI works and all that.\n adds the cruiser enemy type\n\n\n the space key pauses, as does the grey button\n the green circle controls the green ships\n the blue  box controls the speed of the blue ship",
+		 waypoints:[[100,100],[800,920],[1000,1200],[100,1500]],
+		bandits:[[400,400],[400,420],[420,420], [420,400,0],[500,300,2],[-1100,1490,2]]
+	},
+
+	
+
+];
+
+</script>
+<style>
+body{
+	text-align:center;
+}
+canvas{
+	width:1280px;
+	height:720px;
+}
+</style>
+</head>
+<body>
+<canvas id="graph" data-processing-sources="base.pjs input.pde missions.pde guy.pde renderable.pde draw.pjs globals.pde constants.pde combat.pde effects.pde"></canvas>
+</body>
+</html>

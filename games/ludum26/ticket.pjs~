@@ -1,0 +1,91 @@
+/*
+
+
+
+
+
+*/
+
+
+public class troubleTicket {
+	int time = 3000;
+	int start = 0;
+	int step = false;
+	int stepchanged =0;
+	string data = "";
+	var greetings = ["oi", "yo", "hey", "hi", "howdy", "hullo", "good day","hey butthead,", "Steve, jim, whats your name again?","IT,", "@#$T eating @#$@#$ Goblins,", "To whom it may conern,", "Comuputer guys,","...","guys,", "dudes,","dudebro,","bros,","gals,","ladies,","girls,","little girls blouses,"];
+	var items = [" the printer", "my son's laptop", "that cell phone i got last week", "something", "the network", "the website","the giths in my office", "my laptop", "my CPU", "The hampster ball last week", "outlook","my email","my facebook games","that picutre i painted last week","wombats"
+	];
+	var problems = [" doesnt work with our new SNACK MACHINE","stopped working", "is making a funny noise", "looked at me funny", "cant handle this cat gif im looking at online", "doesn't respond"," hates me", "doesn't go","wont stop", "killing us all", "is destroying my productivity", "i dont even","sucks","... help?"];
+	var plea = ["FIXIT FIXIT FIXIT", "I really need this for my online confernence in 5 mintues, please hurry", "can you look at it?", "What do i do now?", "how does that happen?","!@#$%ing help me I dying.", "Does it work for you?", "It would be awesome if you could fix it today","WWhyyyyy?!?","	Don't care, is dumb."];
+	var names= ["-jim","xXXx PHILLIP xXXx", "gertie","you know who", "this email sent from my iphone","bill", "jamie", "william howard taft\n^ Total boss <3<3","Maggie","Destructor,\nLord of death"];
+	
+	var steps = ["running fsck","Toggling Oh EN OOOH EFF EFF switch", "Operating", "sudo rm -rf //","Querying for PEBKAC", "Checking for ID ten tee File", "installing workaround", "disabling features", "performaing percussive maintainenece", "Debugging", "troubleshooting", "shooting users", 	"checking policy on user termination", "terminating processes", "electroshock therapy", "ICE CREAM [int 7]", "Stepping on long tail", "uninstalling flash", "smearing adobe", "updating java, then updating java.", "installing keylogger", "uninstalling key logger", "stealing passwords", "binding keys", "adding \"*.com  127.0.0.1 #important donot remove\" to /etc/hosts", "adding ticket to tracker", "assigning problem to windows team", "assigned to web team", "problem in OSI layer 8", "shoved ticket into the trash" ,"staring at the wall", "sendng lmgtfy.com link to user", "removing ball from mouse", "checking for mental illness", "removed non standard, extra monitor", "regaining stolen property", "driving the enemy before us", "writing patch notes", "dropping a log", "dividing by zero"];
+	
+	
+
+	public troubleTicket(){
+		time = random() * 10000 +5000;
+		data = greetings[floor(random() * greetings.length)];
+		data += ",\n There is an urgent problem with ";
+		data += items[floor(random() * items.length)];
+		data +=".\n It just ";
+		int problem = floor(random() * problems.length);
+		data += problems[problem]+"\n";
+		data += plea[floor(random() * plea.length)]+"\n\n";
+		if(problem ==0){
+			data +=  "Windows Admin Team";
+		}
+		else{
+			data += names[floor(names.length*random())];
+		}
+	
+		
+		start =millis();
+	}
+	
+
+	public  void draw(){
+	
+		background(0);
+		fill(222);
+		rect(width/2,height/2+12,width-48, height-24);
+		
+		fill(0);
+		textSize(16);
+		
+		text(data,64,64);
+
+	
+	
+		image(img.ticket, 64,32);
+		text("Ticket Number "+ floor(random() *1000));
+		remaining = (millis() - start)/time;
+		
+	
+		fill(0);
+		stroke(255);
+		rect(width/2,height/4*3, width/2,16);
+		fill(0,255,0);
+		noStroke();
+		rect(width/2 +1,height/4*3+1, (width/2-2)*remaining ,14);
+		fill(0);
+		if(!step ||stepchanged +2000< millis()){
+			step = floor(random() *steps.length);
+			stepchanged= millis();
+		}
+		text(steps[step], width/4,height/4*3 -24);
+		
+		if(remaining>=1){
+
+			thelevel.reset();
+			thelevel=new level();
+			gameState= GAME;
+			
+			document.getElementById("type").pause();
+			
+		}
+		
+	}
+
+}
