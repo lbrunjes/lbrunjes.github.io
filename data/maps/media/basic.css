@@ -1,0 +1,26 @@
+body{
+	background: #333;
+	color:#fff;
+	font: 16px sans-serif;
+	padding 1em 1ex;
+}
+div{
+	background:#444;
+	padding: 1ex;
+	margin: 1ex 0;
+
+}
+svg{
+	display: block;
+	width:100%;
+	height:auto;
+}
+
+dt{
+	font-variant: small-caps;
+	font-size:large;
+}
+
+a:visited{
+	color:#FF0;
+}
