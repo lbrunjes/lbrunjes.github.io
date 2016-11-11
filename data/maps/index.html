@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html >
 <head>
 <title>Map coloring demos</title>
 <link rel="stylesheet" media="all" href="media/basic.css"/>
@@ -12,14 +12,16 @@
 	fillSVG.addViewBox(document.getElementById("states"));
 	fillSVG.colorRegions(data.data, false);
 	fillSVG.formatKey(document.getElementById("key"));
- document.addEventListener("mouseover", showbox, true);
+	 document.addEventListener("mouseover", showbox, true);
+	 document.addEventListener("onmouseover", showbox, true);
 
 
 }, false);
 
+
  var showbox = function(e){
- 	if(e.srcElement.tagName.toLowerCase() =="path"){
- 		var data= JSON.parse(e.srcElement.getAttribute("mapData"));
+ 	if(e.target.tagName.toLowerCase() =="path" ||e.target.tagName.toLowerCase() =="circle"  ){
+ 		var data= JSON.parse(e.target.getAttribute("mapData"));
  		var table="<h3>Active: "+data.name+"</h3><table>"
  		for(var key in data){
  			table += "<tr><td>"+key+"</td><td>"+data[key]+"</td></tr>";
@@ -105,6 +107,9 @@
 </g>
 
 </svg>
+
+
 </div>
+
 </body>
 </html>
