@@ -195,13 +195,32 @@ this.colorRegions=function(data, coloring_data){
 	return "rgba("+output[0]+","+output[1]+","+output[2]+ ","+output[3]+")";
 };
 
+	var getStrokeColor=function(dataPoint){
+		var output = coloring_data.default_color|| [0,0,0,1];
+		var max = -1;
 
+		//read each color and then do an average()
+		for(var i = 0; i < coloring_data.channels.length; i++)
+		{
+			var cnl = coloring_data.channels[i];
+
+			if(dataPoint[cnl.value]){
+			 max = Math.max(dataPoint[cnl.value], max);
+			 if(max == dataPoint[cnl.value]){
+			 	output =cnl.color;
+			 }
+			}
+
+		}
+		return "rgba("+output[0]+","+output[1]+","+output[2]+ ","+output[3]+")";
+	}
 	//set fill in each region
 	for(var key in data){
 		var region = document.getElementById(data[key][coloring_data.name]);
 		if(region){
 			var color = getFillColor(data[key])
 			region.style.fill = color;
+			region.style.stroke = getStrokeColor(data[key]);
 			region.setAttribute("mapData", JSON.stringify(data[key]));;
 		}
 		else{
