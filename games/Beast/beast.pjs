@@ -39,8 +39,7 @@ var levels = [
 {"blocked":5,"pull":false, "destroy":false,"hatchTime":60, "b":5,"s":0.125,"e":0,"burning":false},
 {"blocked":6,"pull":false, "destroy":false,"hatchTime":45, "b":6,"s":0.125,"e":1,"burning":false},
 {"blocked":7,"pull":false, "destroy":false,"hatchTime":45, "b":6,"s":0.125,"e":1,"burning":false},
-{"blocked":8,"pull":false, "destroy":false,"hatchTime":30, "b":6,"s":0.25,"e":1,"burning":true},
-
+{"blocked":8,"pull":false, "destroy":false,"hatchTime":30, "b":6,"s":0.25,"e":1,"burning":true}
 ];
 var inputDelay =50;
 var lastInput = 0;
