@@ -1,68 +1,67 @@
 <!doctype html>
 <html>
-<head>
-	<link rel="stylesheet" href="media/main.css" media="all"/>
-	<title>Lee's Scratch space</title>
-	<script>
+  <head>
+    <link rel="stylesheet" href="media/main.css" media="all" />
+    <title>Lee's Scratch space</title>
+    <script>
+      var box,
+        context,
+        timer,
+        count = 0;
+      var drawBlinkyLights = function () {
+        var block = 6,
+          w = box.width / block;
+        context.clearRect(0, 0, box.width, box.height);
+        count += block / 2;
+        //draw boxes
+        for (var i = 0; i < w; i++) {
+          var a = Math.sin((i + count) / (w / 2)) * 0.5 + 0.5;
+          context.fillStyle = "rgba(200,200,200," + a + ")";
+          context.fillRect(i * block + 1, 0, block - 2, box.height);
+        }
+      };
 
-	var box, context, timer, count = 0;
-	var drawBlinkyLights =function(){
-		var block = 6,w = box.width/block;
-		context.clearRect(0,0,box.width, box.height);
-		count += block/2;
-		//draw boxes
-		for(var i = 0 ; i < w ;i++){
-			var a = Math.sin((i+count)/(w/2))*.5 +.5;
-			context.fillStyle = "rgba(200,200,200,"+a+")";
-			context.fillRect(i *block +1, 0, block -2, box.height);
+      document.addEventListener("DOMContentLoaded", function () {
+        ((box = document.getElementById("box")),
+          (context = box.getContext("2d")));
 
-		}
-	}
+        timer = window.setInterval(drawBlinkyLights, 1000 / 27);
+      });
+    </script>
+  </head>
+  <body>
+    <div id="wrap">
+      <header id="about">
+        <img
+          id="avatar"
+          src="https://avatars3.githubusercontent.com/u/942037"
+        />
+        <p>
+          This is a chunk of web space to throw simple demos up on or in
+          progress stuff that I might be working on. It might be cool it might
+          not, I don't really know. Source is
+          <a href="https://github.com/lbrunjes/lbrunjes.github.io">here</a>
+        </p>
+      </header>
+      <nav></nav>
+      <div id="main">
+        <h3>Current Projects</h3>
+        <ul>
+          <li>
+            <a href="soccer/2026/fall/">Fall 2026 soccer stuff</a>
+          </li>
+        </ul>
+      </div>
+      <div id="me">
+        <h3>Me on the web:</h3>
 
-	document.addEventListener("DOMContentLoaded", function(){
-		box = document.getElementById("box"),
-		context =box.getContext("2d");
-		
-		timer = window.setInterval(drawBlinkyLights,1000/27);
-		
-	});
+        <a href="http://brunjes.org">Brunjes.org</a>
 
-
-
-</script>
-</head>
-<body>
-<div id="wrap">
-	<header id="about">
-		<img id="avatar" src="https://avatars3.githubusercontent.com/u/942037"/>
-		<p>This is a chunk of web space to throw simple demos up on or in progress stuff that I might be working on. It might be cool it might not, I don't really know. Source is <a href="https://github.com/lbrunjes/lbrunjes.github.io">here</a></p>
-
-	</header>
-	<nav>
-	</nav>
-	<div id="main">
-
-		<h3>Current Projects</h3>
-		<ul>
-			<li><a href="http://hawkscan.com">HawkScan</a><br/>A web security start up</li>
-
-		</ul>
-		
-
-	</div>
-	<div id="me">
-		<h3>Me on the web:</h3>
-
-		<a href="http://brunjes.org">Brunjes.org</a>
-		<a href="http://brunjes-labs.org">Brunjes Labs</a>
-		<a href="http://flickr.com/leebrunjes">Flickr</a>
-		<a href="http://github.com/lbrunjes">Github</a>
-		<a href="http://twitter.com/lbrunjes">Twitter</a>
-		<a href="http://brunjes.asuscommm.com">Home</a>
-		</div>
-	<footer>
-	<canvas id="box"></canvas>
-	</footer>
-</div>
-</body>
+        <a href="http://github.com/lbrunjes">Github</a>
+      </div>
+      <footer>
+        <canvas id="box"></canvas>
+      </footer>
+    </div>
+  </body>
 </html>
